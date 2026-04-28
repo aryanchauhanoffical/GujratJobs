@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+**/.env.*.local
+!**/.env.example
+
+# Build output
+dist/
+build/
+**/dist/
+**/build/
+
+# User-uploaded files
+server/uploads/resumes/*
+!server/uploads/resumes/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+# (mcp.json contains a TestSprite API key — do NOT commit)
+
+# Caches
+.cache/
+.parcel-cache/
+.eslintcache
+
+# Apify scraper local datasets (regenerated on each run)
+apify-scraper/storage/
+
+# Misc
+*.pid
+coverage/
+.nyc_output/
+
+# Local one-off scripts (keep helpers but not throwaway fixers)
+server/fix_*.js
+
+# TestSprite & local mcp data
+testsprite_tests/
+mcp-data/
+
+# Old/binary docs
+*.docx

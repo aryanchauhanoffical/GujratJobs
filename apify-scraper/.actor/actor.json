@@ -1,0 +1,46 @@
+{
+  "actorSpecification": 1,
+  "name": "gujaratjobs-full-scraper",
+  "title": "GujaratJobs Full Dataset Scraper",
+  "description": "Systematically scrapes all job listings from GujaratJobs across every city, job type, experience level, and salary range combination. Deduplicates by _id.",
+  "version": "1.0",
+  "buildTag": "latest",
+  "environmentVariables": [],
+  "dockerfile": "./Dockerfile",
+  "readme": "./README.md",
+  "input": "./input_schema.json",
+  "storages": {
+    "dataset": {
+      "actorSpecification": 1,
+      "fields": {},
+      "views": {
+        "overview": {
+          "title": "Jobs Overview",
+          "transformation": {
+            "fields": [
+              "id", "title", "company", "city", "type",
+              "experienceLevel", "salaryMin", "salaryMax",
+              "isWalkIn", "postedAt", "sourceUrl"
+            ]
+          },
+          "display": {
+            "component": "table",
+            "properties": {
+              "id":              { "label": "ID",              "format": "text" },
+              "title":           { "label": "Title",           "format": "text" },
+              "company":         { "label": "Company",         "format": "text" },
+              "city":            { "label": "City",            "format": "text" },
+              "type":            { "label": "Type",            "format": "text" },
+              "experienceLevel": { "label": "Experience",      "format": "text" },
+              "salaryMin":       { "label": "Salary Min (₹)",  "format": "number" },
+              "salaryMax":       { "label": "Salary Max (₹)",  "format": "number" },
+              "isWalkIn":        { "label": "Walk-in",         "format": "boolean" },
+              "postedAt":        { "label": "Posted",          "format": "datetime" },
+              "sourceUrl":       { "label": "Apply Link",      "format": "link" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

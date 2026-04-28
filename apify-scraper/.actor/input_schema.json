@@ -1,0 +1,40 @@
+{
+  "actorSpecification": 1,
+  "title": "GujaratJobs Scraper Input",
+  "description": "Configuration for the GujaratJobs full dataset scraper",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "baseUrl": {
+      "title": "API Base URL",
+      "description": "Base URL of the GujaratJobs backend (without trailing slash)",
+      "type": "string",
+      "default": "http://localhost:5001",
+      "example": "https://api.gujaratjobs.in"
+    },
+    "apiToken": {
+      "title": "API Bearer Token",
+      "description": "Optional JWT token if the /api/jobs endpoint requires authentication",
+      "type": "string",
+      "default": "",
+      "isSecret": true
+    },
+    "pageSize": {
+      "title": "Page Size",
+      "description": "Number of jobs fetched per request (max 50 enforced by the API)",
+      "type": "integer",
+      "default": 50,
+      "minimum": 1,
+      "maximum": 50
+    },
+    "concurrency": {
+      "title": "Concurrency",
+      "description": "Number of filter combinations fetched in parallel. Keep ≤10 to avoid overloading the server.",
+      "type": "integer",
+      "default": 5,
+      "minimum": 1,
+      "maximum": 20
+    }
+  },
+  "required": ["baseUrl"]
+}
