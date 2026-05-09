@@ -143,39 +143,59 @@ const normalizeIndeedJob = (job) => {
   };
 };
 
-// Normalize Naukri job data
+// Normalize Naukri job data — epicscrapers actor returns placeholders[] array
+// for location/experience/salary instead of flat fields
 const normalizeNaukriJob = (job) => {
-  const salary = parseSalary(job.salary || "");
+  const placeholders = job.placeholders || [];
+  const locationLabel =
+    placeholders.find((p) => p.type === "location")?.label || "";
+  const experienceLabel =
+    placeholders.find((p) => p.type === "experience")?.label || "";
+
+  // Strip HTML tags from description
+  const rawDesc = job.jobDescription || job.description || "";
+  const description = rawDesc
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  // Naukri jdURL is relative — prefix with domain for full URL
+  const jdUrl = job.jdURL || "";
+  const sourceUrl = jdUrl.startsWith("http")
+    ? jdUrl
+    : jdUrl
+    ? `https://www.naukri.com${jdUrl}`
+    : "";
+
   return {
     title: job.title || job.jobTitle || "",
     company: job.companyName || job.company || "",
-    description: job.jobDescription || job.description || "",
+    description,
     location: {
-      city: extractGujaratCity(job.location || ""),
+      city: extractGujaratCity(locationLabel),
       state: "Gujarat",
-      address: job.location || "",
+      address: locationLabel,
     },
     type: "full-time",
-    experienceLevel: normalizeExperienceLevel(job.experience || ""),
+    experienceLevel: normalizeExperienceLevel(experienceLabel),
     source: "scraped",
-    sourceUrl: job.jdURL || job.url || "",
+    sourceUrl,
     salary: {
-      min: salary.min,
-      max: salary.max,
+      min: job.salaryDetail?.minimumSalary || 0,
+      max: job.salaryDetail?.maximumSalary || 0,
       currency: "INR",
     },
-    skills: (job.keySkills || "")
+    skills: (job.tagsAndSkills || "")
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean),
     scrapedAt: new Date(),
     requirements: [],
-    isWalkIn: detectWalkIn(
-      job.title || job.jobTitle || "",
-      job.jobDescription || job.description || "",
-    ),
+    isWalkIn:
+      job.walkinJob === true ||
+      detectWalkIn(job.title || "", description),
     walkInDetails: {
-      contactEmail: extractEmailFromText(job.jobDescription || job.description || ""),
+      contactEmail: extractEmailFromText(description),
     },
   };
 };
@@ -390,10 +410,12 @@ const scrapeGujaratJobs = async (
 
     const naukriJobs = (naukriRaw || [])
       .filter((job) => {
-        const loc = (job.location || "").toLowerCase();
-        return (
-          GUJARAT_KEYWORDS.some((kw) => loc.includes(kw.toLowerCase())) ||
-          loc.includes("gujarat")
+        const placeholders = job.placeholders || [];
+        const locLabel = (
+          placeholders.find((p) => p.type === "location")?.label || ""
+        ).toLowerCase();
+        return GUJARAT_KEYWORDS.some((kw) =>
+          locLabel.includes(kw.toLowerCase()),
         );
       })
       .map(normalizeNaukriJob);
