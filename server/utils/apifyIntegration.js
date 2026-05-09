@@ -372,13 +372,18 @@ const scrapeGujaratJobs = async (
     console.error("Indeed scraping failed:", error.message);
   }
 
-  // Scrape Naukri (epicscrapers actor — uses `keyword` + `location` + `maxItems`)
+  // Scrape Naukri (epicscrapers actor — uses `startUrls` with Naukri search URLs)
   try {
     console.log("Scraping Naukri...");
+    const naukriUrls = [
+      "https://www.naukri.com/fresher-jobs-in-gujarat",
+      "https://www.naukri.com/fresher-jobs-in-ahmedabad",
+      "https://www.naukri.com/fresher-jobs-in-surat",
+      "https://www.naukri.com/walk-in-jobs-in-gujarat",
+    ];
+
     const naukriRaw = await runApifyActor(ACTORS.NAUKRI_SCRAPER, {
-      keyword: keywords[0],
-      location: "Gujarat",
-      experience: "0",
+      startUrls: naukriUrls.map((url) => ({ url })),
       maxItems: 30,
       proxy: { useApifyProxy: true },
     });
