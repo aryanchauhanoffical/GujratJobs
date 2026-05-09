@@ -372,12 +372,15 @@ const scrapeGujaratJobs = async (
     console.error("Indeed scraping failed:", error.message);
   }
 
-  // Scrape Naukri
+  // Scrape Naukri (epicscrapers actor — uses `keyword` + `location` + `maxItems`)
   try {
     console.log("Scraping Naukri...");
     const naukriRaw = await runApifyActor(ACTORS.NAUKRI_SCRAPER, {
-      searchQueries: [keywords[0] + " " + location],
-      maxItems: 20,
+      keyword: keywords[0],
+      location: "Gujarat",
+      experience: "0",
+      maxItems: 30,
+      proxy: { useApifyProxy: true },
     });
 
     const naukriJobs = (naukriRaw || [])
