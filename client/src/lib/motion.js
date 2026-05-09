@@ -46,6 +46,28 @@ export const stagger = {
   },
 };
 
+// Word-by-word stagger for headlines — slightly longer gaps, more dramatic
+export const wordStagger = {
+  initial: {},
+  animate: {
+    transition: {
+      staggerChildren: 0.05,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+// Single word reveal (used inside wordStagger)
+export const wordReveal = {
+  initial: { opacity: 0, y: 20, filter: "blur(8px)" },
+  animate: {
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: { duration: 0.5, ease: easeOutCirc },
+  },
+};
+
 // Card hover — Starbucks-style whisper of lift, no shadow change
 export const cardHover = {
   rest: { y: 0 },
@@ -61,5 +83,14 @@ export const buttonPress = {
   pressed: {
     scale: 0.98,
     transition: { duration: D_PRESS, ease: easeStandard },
+  },
+};
+
+// Underline draw — used to animate the saffron line under "walk-in"
+export const underlineDraw = {
+  initial: { scaleX: 0, originX: 0 },
+  animate: {
+    scaleX: 1,
+    transition: { duration: 0.7, delay: 0.6, ease: easeOutCirc },
   },
 };
