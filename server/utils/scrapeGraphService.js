@@ -1,60 +1,52 @@
 /**
- * ScrapeGraphAI optional enrichment layer (v1 smartscraper).
+ * ScrapeGraphAI optional enrichment layer (v2 /api/extract).
  *
- * Sits AFTER Apify scraping. For each raw job, sends the job's sourceUrl
- * to ScrapeGraphAI's smartscraper endpoint with a strict JSON schema for
- * the fields we want (title, company, location, walk-in date, deadline,
- * description). Merges the higher-quality fields back; Apify stays the
- * source of truth.
+ * Sits AFTER Apify scraping. Sends each raw job's sourceUrl to SGAI's
+ * extract endpoint with a structured prompt; SGAI fetches the page,
+ * runs an LLM to pull out the requested fields, and returns JSON.
  *
- * Non-blocking by design: any failure (timeout, missing key, soft-failure
- * status, network error) returns the original job so the scraping pipeline
- * never breaks.
+ * Apify stays the source of truth — this only fills gaps in description
+ * and walk-in dates, never overrides good data.
  *
- * Constraints (SGAI free tier):
+ * Non-blocking by design: any failure (timeout, missing key, soft-fail,
+ * blocked URL, network error) returns the original job unchanged so the
+ * scraping pipeline never breaks.
+ *
+ * Known limitations:
+ *   - Naukri blocks SGAI's fetcher even with stealth → those URLs are
+ *     skipped to avoid wasted credits.
+ *   - LinkedIn often requires stealth (+5 credits/req).
+ *
+ * Free tier:
  *   - 500 credits / month
  *   - 10 requests / minute
  *   - 1 concurrent request
- * We enforce concurrency=1 + a small inter-call delay so we never trip the
- * rate limit when enriching a batch of 20-30 scraped jobs.
+ * We serialize calls and add a 6.5s inter-call floor so we stay under.
  */
 
 const axios = require("axios");
 
-const SCRAPEGRAPH_API_URL = "https://api.scrapegraphai.com/v1/smartscraper";
-const TIMEOUT_MS = 60000; // SGAI is synchronous and can take 5-25s per page
-const MIN_INTERVAL_MS = 6500; // ~9 req/min — under the 10 req/min ceiling
+const SCRAPEGRAPH_API_URL = "https://v2-api.scrapegraphai.com/api/extract";
+const TIMEOUT_MS = 60000;
+const MIN_INTERVAL_MS = 6500;
 
 const ENRICHMENT_PROMPT =
-  "Extract the job posting details from this page. Return null for any field that is not explicitly mentioned. Do not invent dates.";
+  "Extract these structured fields from the job posting page and return JSON. Use null for any field not explicitly stated. Do not invent values.\n\n" +
+  "Fields:\n" +
+  "- job_title: string\n" +
+  "- company_name: string\n" +
+  '- location: string in "City, State" format\n' +
+  '- job_type: "walk-in" or "apply"\n' +
+  "- walk_in_date: ISO date YYYY-MM-DD or null\n" +
+  "- deadline: ISO date YYYY-MM-DD or null\n" +
+  "- description: cleaned plain-text description, no HTML";
 
-const OUTPUT_SCHEMA = {
-  type: "object",
-  properties: {
-    job_title: { type: "string" },
-    company_name: { type: "string" },
-    location: { type: "string", description: "City, State" },
-    job_type: {
-      type: "string",
-      description: "Either 'walk-in' or 'apply'",
-    },
-    walk_in_date: {
-      type: "string",
-      description: "ISO date YYYY-MM-DD if a walk-in date is mentioned, else null",
-    },
-    deadline: {
-      type: "string",
-      description: "ISO date YYYY-MM-DD application deadline if shown, else null",
-    },
-    description: {
-      type: "string",
-      description: "Cleaned plain-text description without HTML tags",
-    },
-  },
-  required: ["job_title", "company_name"],
-};
+// SGAI's fetcher is blocked by these domains — skip to save credits.
+const BLOCKED_DOMAINS = [/naukri\.com/i];
 
-// Serialize calls to respect the free-tier rate limit (10 req/min, 1 concurrent).
+// Domains that need stealth (+5 credits/req) to bypass anti-bot.
+const STEALTH_DOMAINS = [/linkedin\.com/i];
+
 let lastCallAt = 0;
 let inflight = Promise.resolve();
 
@@ -67,9 +59,6 @@ const throttle = async () => {
   lastCallAt = Date.now();
 };
 
-/**
- * Pick the longer/more complete value when merging.
- */
 const pickBetter = (original, enriched) => {
   if (!enriched) return original;
   if (!original) return enriched;
@@ -79,9 +68,6 @@ const pickBetter = (original, enriched) => {
   return original;
 };
 
-/**
- * Parse a date string into a Date — null on any failure.
- */
 const parseDate = (str) => {
   if (!str || typeof str !== "string") return null;
   const trimmed = str.trim();
@@ -90,16 +76,9 @@ const parseDate = (str) => {
   return isNaN(d.getTime()) ? null : d;
 };
 
-/**
- * LinkedIn aggressively blocks unauth scraping — enable stealth for those.
- * Costs +5 credits per call but actually returns data.
- */
-const needsStealth = (url) => /linkedin\.com/i.test(url);
+const isBlockedDomain = (url) => BLOCKED_DOMAINS.some((re) => re.test(url));
+const needsStealth = (url) => STEALTH_DOMAINS.some((re) => re.test(url));
 
-/**
- * Enrich a single raw job using ScrapeGraphAI smartscraper.
- * Always returns a job object — original on any failure.
- */
 async function enrichJobData(rawJob) {
   if (!rawJob || typeof rawJob !== "object") return rawJob;
 
@@ -113,7 +92,14 @@ async function enrichJobData(rawJob) {
     return rawJob;
   }
 
-  // Chain so concurrency stays at 1 across the whole batch (free-tier limit).
+  if (isBlockedDomain(rawJob.sourceUrl)) {
+    console.log(
+      `[scrapegraph] Skipping blocked domain: ${rawJob.sourceUrl.slice(0, 80)}`,
+    );
+    return rawJob;
+  }
+
+  // Serialize across the batch so we stay at concurrency=1.
   inflight = inflight.then(() => callSGAI(rawJob, apiKey)).catch(() => rawJob);
   return inflight;
 }
@@ -128,9 +114,8 @@ async function callSGAI(rawJob, apiKey) {
     const response = await axios.post(
       SCRAPEGRAPH_API_URL,
       {
-        website_url: rawJob.sourceUrl,
-        user_prompt: ENRICHMENT_PROMPT,
-        output_schema: OUTPUT_SCHEMA,
+        url: rawJob.sourceUrl,
+        prompt: ENRICHMENT_PROMPT,
         ...(stealth ? { stealth: true } : {}),
       },
       {
@@ -145,15 +130,30 @@ async function callSGAI(rawJob, apiKey) {
     const elapsed = Date.now() - startedAt;
     const body = response.data || {};
 
-    // SGAI returns 200 with status:"failed" on soft errors — treat as failure
-    if (body.status && body.status !== "completed") {
+    // v2 returns { error: { type, message } } on soft failures (e.g.,
+    // fetch_failed when a site blocks SGAI's fetcher).
+    if (body.error) {
+      const errMsg =
+        typeof body.error === "string"
+          ? body.error
+          : body.error.message || JSON.stringify(body.error);
       console.error(
-        `[scrapegraph] Soft-fail (${body.status}, ${elapsed}ms) for ${rawJob.sourceUrl.slice(0, 80)}: ${body.error || "no error message"}`,
+        `[scrapegraph] Soft-fail (${elapsed}ms) for ${rawJob.sourceUrl.slice(0, 80)}: ${errMsg}`,
       );
       return rawJob;
     }
 
-    const enriched = body.result || {};
+    // v2 returns extracted data in `json` field.
+    const enriched = body.json || {};
+
+    // If the LLM returned nothing useful, treat as no-op.
+    if (!enriched || Object.keys(enriched).length === 0) {
+      console.log(
+        `[scrapegraph] Empty extraction (${elapsed}ms) for ${rawJob.sourceUrl.slice(0, 80)}`,
+      );
+      return rawJob;
+    }
+
     console.log(
       `[scrapegraph] Enriched (${elapsed}ms${stealth ? ", stealth" : ""}): ${rawJob.sourceUrl.slice(0, 80)}`,
     );
