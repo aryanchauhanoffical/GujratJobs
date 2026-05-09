@@ -3,9 +3,9 @@ const axios = require("axios");
 const APIFY_BASE_URL = "https://api.apify.com/v2";
 const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
 
-// Apify Actor IDs - Updated to valid 2026 versions
+// Apify Actor IDs — using popular, actively-maintained actors
 const ACTORS = {
-  LINKEDIN_JOBS: "jay_u~linkedin-jobs-scraper",
+  LINKEDIN_JOBS: "bebity~linkedin-jobs-scraper",
   INDEED_SCRAPER: "misceres~indeed-scraper",
   NAUKRI_SCRAPER: "epicscrapers~naukri-scraper",
 };
@@ -72,7 +72,9 @@ const runApifyActor = async (actorId, input, timeoutMs = 120000) => {
 
     throw new Error(`Apify actor run timed out: ${runId}`);
   } catch (error) {
+    const apiResp = error.response?.data;
     console.error(`Apify actor error (${actorId}):`, error.message);
+    if (apiResp) console.error(`  → Apify response:`, JSON.stringify(apiResp).slice(0, 300));
     return [];
   }
 };
@@ -315,12 +317,14 @@ const scrapeGujaratJobs = async (
   console.log("Starting Gujarat jobs scraping...");
   const allJobs = [];
 
-  // Scrape LinkedIn
+  // Scrape LinkedIn (bebity actor — uses `title` + `location` + `rows`)
   try {
     console.log("Scraping LinkedIn...");
     const linkedInRaw = await runApifyActor(ACTORS.LINKEDIN_JOBS, {
-      searchQueries: keywords.map((k) => `${k} in ${location}`),
-      maxItems: 20,
+      title: keywords[0],
+      location: location,
+      rows: 30,
+      proxy: { useApifyProxy: true },
     });
 
     const linkedInJobs = (linkedInRaw || [])
