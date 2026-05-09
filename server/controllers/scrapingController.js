@@ -3,6 +3,7 @@ const { scrapeGujaratJobs } = require('../utils/apifyIntegration');
 const { filterDuplicates } = require('../utils/duplicateChecker');
 const { decideJobStatus, calculateConfidenceScore, isValidScrapedJob } = require('../utils/jobStatusHelper');
 const { calculateUrgencyScore } = require('../utils/walkInUrgency');
+const { enrichJobData } = require('../utils/scrapeGraphService');
 
 let scrapingStatus = {
   isRunning: false,
@@ -71,13 +72,26 @@ const runScrapingJob = async (keywords, location) => {
       throw new Error('No admin user found to associate with scraped jobs');
     }
 
+    // Optional ScrapeGraphAI enrichment — fills gaps in description/walk-in
+    // dates without changing schema or breaking the pipeline. Disabled by
+    // default; toggle USE_SCRAPEGRAPH_ENRICHMENT=true to activate.
+    const useEnrichment = process.env.USE_SCRAPEGRAPH_ENRICHMENT === 'true';
+    let enrichedCount = 0;
+
     // Save unique jobs to database
     let savedCount = 0;
     let autoApprovedCount = 0;
     let pendingCount = 0;
     let discardedCount = 0;
 
-    for (const jobData of uniqueJobs) {
+    for (const rawJob of uniqueJobs) {
+      // Run enrichment first so missing fields can be filled before validation
+      let jobData = rawJob;
+      if (useEnrichment) {
+        jobData = await enrichJobData(rawJob);
+        if (jobData?._enrichedBy === 'scrapegraphai') enrichedCount++;
+      }
+
       // Discard jobs missing title or description
       if (!isValidScrapedJob(jobData)) {
         discardedCount++;
@@ -91,8 +105,11 @@ const runScrapingJob = async (keywords, location) => {
           ? calculateUrgencyScore(new Date(jobData.walkInDetails.date))
           : null;
 
+        // Strip enrichment metadata before save — schema doesn't define these
+        const { _enrichedBy, _enrichedAt, ...cleanJob } = jobData;
+
         await Job.create({
-          ...jobData,
+          ...cleanJob,
           recruiter: adminUser._id,
           status,
           confidenceScore,
@@ -106,6 +123,10 @@ const runScrapingJob = async (keywords, location) => {
         console.error('Error saving job:', saveError.message);
         scrapingStatus.errors.push(saveError.message);
       }
+    }
+
+    if (useEnrichment) {
+      console.log(`[scrapegraph] Enriched ${enrichedCount}/${uniqueJobs.length} jobs`);
     }
 
     scrapingStatus.jobsSaved = savedCount;

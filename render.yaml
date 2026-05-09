@@ -16,6 +16,10 @@ services:
         value: "true"
       - key: ENABLE_SCRAPER
         value: "false"
+      - key: USE_SCRAPEGRAPH_ENRICHMENT
+        value: "false"
+      - key: SCRAPEGRAPH_API_KEY
+        sync: false
       - key: JWT_EXPIRES_IN
         value: 7d
       - key: JWT_REFRESH_EXPIRES_IN
