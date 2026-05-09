@@ -111,6 +111,15 @@ export default {
         },
         'on-primary': '#FFFFFF',
         'on-dark': '#FFFFFF',
+        success: {
+          DEFAULT: '#0B7B3F',
+          soft: '#D4ECDA',
+        },
+        warning: '#F59E0B',
+        error: {
+          DEFAULT: '#DC2626',
+          soft: '#FCE7E7',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],

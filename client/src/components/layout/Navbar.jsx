@@ -1,23 +1,32 @@
-import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import NotificationBell from './NotificationBell';
-import { getInitials } from '../../utils/helpers';
+/**
+ * Navbar — DESIGN.md "Disciplined warmth"
+ *
+ * BMW-clean: 64px height, hairline bottom border, two type weights only,
+ * sharp 0px primary CTA, full-pill secondary. No gradients, no glass.
+ */
+
+import React, { useState, Fragment } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Menu, Transition } from "@headlessui/react";
 import {
   Bars3Icon,
   XMarkIcon,
-  MapPinIcon,
-  BriefcaseIcon,
   ChevronDownIcon,
   ArrowRightOnRectangleIcon,
   UserCircleIcon,
-  BuildingOfficeIcon,
   Cog6ToothIcon,
-} from '@heroicons/react/24/outline';
-import { Menu, Transition } from '@headlessui/react';
-import { Fragment } from 'react';
+} from "@heroicons/react/24/outline";
 
-const Navbar = () => {
+import { useAuth } from "../../context/AuthContext";
+import NotificationBell from "./NotificationBell";
+import { getInitials } from "../../utils/helpers";
+
+const NAV_LINKS = [
+  { to: "/jobs", label: "Find Jobs" },
+  { to: "/jobs?isWalkIn=true", label: "Walk-ins" },
+];
+
+export default function Navbar() {
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -25,182 +34,115 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     await logout();
-    navigate('/');
+    navigate("/");
   };
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => location.pathname === path.split("?")[0];
 
-  const navLinks = [
-    { to: '/jobs', label: 'Find Jobs' },
-    { to: '/jobs?isWalkIn=true', label: 'Walk-in Jobs' },
-  ];
-
-  const getDashboardLink = () => {
-    if (!user) return '/';
-    const links = {
-      jobseeker: '/dashboard',
-      recruiter: '/recruiter/dashboard',
-      admin: '/admin/dashboard',
-    };
-    return links[user.role] || '/';
-  };
+  const dashboardLink = (() => {
+    if (!user) return "/";
+    return (
+      {
+        jobseeker: "/dashboard",
+        recruiter: "/recruiter/dashboard",
+        admin: "/admin/dashboard",
+      }[user.role] || "/"
+    );
+  })();
 
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav className="bg-canvas border-b border-hairline sticky top-0 z-40">
+      <div className="max-w-7xl mx-auto px-6">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-gradient-to-br from-primary-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <BriefcaseIcon className="h-5 w-5 text-white" />
-            </div>
-            <span className="font-bold text-xl text-gray-900">
-              Gujarat<span className="text-primary-600">Jobs</span>
-            </span>
+          {/* Wordmark — text only, no logo blob */}
+          <Link
+            to="/"
+            className="font-bold text-lg tracking-tight text-ink hover:text-saffron transition-colors"
+          >
+            Gujarat<span className="text-saffron">Jobs</span>
           </Link>
 
           {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-6">
-            {navLinks.map((link) => (
+          <div className="hidden md:flex items-center gap-1">
+            {NAV_LINKS.map(({ to, label }) => (
               <Link
-                key={link.to}
-                to={link.to}
-                className={`text-sm font-medium transition-colors ${
-                  isActive(link.to)
-                    ? 'text-primary-600'
-                    : 'text-gray-600 hover:text-gray-900'
+                key={to}
+                to={to}
+                className={`px-4 h-16 inline-flex items-center text-sm font-bold tracking-tight transition-colors ${
+                  isActive(to)
+                    ? "text-saffron border-b-2 border-saffron -mb-px"
+                    : "text-ink hover:text-saffron"
                 }`}
               >
-                {link.label}
+                {label}
               </Link>
             ))}
           </div>
 
-          {/* Right side */}
-          <div className="flex items-center gap-3">
-            {/* Location indicator */}
-            {user?.location?.city && (
-              <div className="hidden md:flex items-center gap-1 text-sm text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full">
-                <MapPinIcon className="h-4 w-4 text-primary-500" />
-                <span>{user.location.city}</span>
-              </div>
-            )}
-
+          {/* Right side: auth */}
+          <div className="hidden md:flex items-center gap-2">
             {isAuthenticated ? (
               <>
                 <NotificationBell />
 
-                {/* User menu */}
                 <Menu as="div" className="relative">
-                  <Menu.Button className="flex items-center gap-2 hover:bg-gray-100 px-3 py-2 rounded-lg transition-colors">
-                    <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-sm font-semibold overflow-hidden">
-                      {user?.profilePic ? (
-                        <img src={user.profilePic} alt={user.name} className="w-full h-full object-cover" />
-                      ) : (
-                        getInitials(user?.name)
-                      )}
+                  <Menu.Button className="flex items-center gap-2 px-3 h-10 rounded-full border border-hairline-strong hover:border-ink transition-colors">
+                    <div className="w-7 h-7 rounded-full bg-saffron text-on-primary flex items-center justify-center text-xs font-bold">
+                      {getInitials(user?.name || "U")}
                     </div>
-                    <span className="hidden md:block text-sm font-medium text-gray-700 max-w-[120px] truncate">
-                      {user?.name?.split(' ')[0]}
+                    <span className="text-sm font-bold text-ink max-w-[120px] truncate">
+                      {user?.name?.split(" ")[0]}
                     </span>
-                    <ChevronDownIcon className="h-4 w-4 text-gray-500 hidden md:block" />
+                    <ChevronDownIcon className="h-4 w-4 text-muted-text" />
                   </Menu.Button>
-
                   <Transition
                     as={Fragment}
-                    enter="transition ease-out duration-100"
-                    enterFrom="transform opacity-0 scale-95"
-                    enterTo="transform opacity-100 scale-100"
-                    leave="transition ease-in duration-75"
-                    leaveFrom="transform opacity-100 scale-100"
-                    leaveTo="transform opacity-0 scale-95"
+                    enter="transition ease-out duration-150"
+                    enterFrom="opacity-0 translate-y-1"
+                    enterTo="opacity-100 translate-y-0"
+                    leave="transition ease-in duration-100"
+                    leaveFrom="opacity-100"
+                    leaveTo="opacity-0"
                   >
-                    <Menu.Items className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-xl border border-gray-100 focus:outline-none z-50">
-                      <div className="px-4 py-3 border-b border-gray-100">
-                        <p className="text-sm font-medium text-gray-900 truncate">{user?.name}</p>
-                        <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-                        <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-primary-100 text-primary-700 rounded-full capitalize font-medium">
-                          {user?.role}
-                        </span>
-                      </div>
-
-                      <div className="py-1">
+                    <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right bg-canvas border border-hairline shadow-modal focus:outline-none">
+                      <div className="p-2">
                         <Menu.Item>
                           {({ active }) => (
                             <Link
-                              to={getDashboardLink()}
-                              className={`flex items-center gap-2 px-4 py-2 text-sm ${active ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
+                              to={dashboardLink}
+                              className={`flex items-center gap-3 px-3 py-2.5 text-sm font-bold ${
+                                active ? "bg-canvas-warm" : ""
+                              }`}
                             >
-                              <Cog6ToothIcon className="h-4 w-4" />
+                              <Cog6ToothIcon className="h-4 w-4 text-muted-text" />
                               Dashboard
                             </Link>
                           )}
                         </Menu.Item>
-
-                        {user?.role === 'jobseeker' && (
-                          <>
-                            <Menu.Item>
-                              {({ active }) => (
-                                <Link
-                                  to="/profile"
-                                  className={`flex items-center gap-2 px-4 py-2 text-sm ${active ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
-                                >
-                                  <UserCircleIcon className="h-4 w-4" />
-                                  My Profile
-                                </Link>
-                              )}
-                            </Menu.Item>
-                            <Menu.Item>
-                              {({ active }) => (
-                                <Link
-                                  to="/applications"
-                                  className={`flex items-center gap-2 px-4 py-2 text-sm ${active ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
-                                >
-                                  <BriefcaseIcon className="h-4 w-4" />
-                                  My Applications
-                                </Link>
-                              )}
-                            </Menu.Item>
-                          </>
-                        )}
-
-                        {user?.role === 'recruiter' && (
-                          <>
-                            <Menu.Item>
-                              {({ active }) => (
-                                <Link
-                                  to="/recruiter/profile"
-                                  className={`flex items-center gap-2 px-4 py-2 text-sm ${active ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
-                                >
-                                  <BuildingOfficeIcon className="h-4 w-4" />
-                                  Company Profile
-                                </Link>
-                              )}
-                            </Menu.Item>
-                            <Menu.Item>
-                              {({ active }) => (
-                                <Link
-                                  to="/recruiter/post-job"
-                                  className={`flex items-center gap-2 px-4 py-2 text-sm ${active ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
-                                >
-                                  <BriefcaseIcon className="h-4 w-4" />
-                                  Post a Job
-                                </Link>
-                              )}
-                            </Menu.Item>
-                          </>
-                        )}
-                      </div>
-
-                      <div className="py-1 border-t border-gray-100">
+                        <Menu.Item>
+                          {({ active }) => (
+                            <Link
+                              to="/profile"
+                              className={`flex items-center gap-3 px-3 py-2.5 text-sm font-bold ${
+                                active ? "bg-canvas-warm" : ""
+                              }`}
+                            >
+                              <UserCircleIcon className="h-4 w-4 text-muted-text" />
+                              Profile
+                            </Link>
+                          )}
+                        </Menu.Item>
+                        <div className="border-t border-hairline my-1" />
                         <Menu.Item>
                           {({ active }) => (
                             <button
                               onClick={handleLogout}
-                              className={`flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 ${active ? 'bg-red-50' : ''}`}
+                              className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-error ${
+                                active ? "bg-error-soft" : ""
+                              }`}
                             >
                               <ArrowRightOnRectangleIcon className="h-4 w-4" />
-                              Sign Out
+                              Sign out
                             </button>
                           )}
                         </Menu.Item>
@@ -210,59 +152,93 @@ const Navbar = () => {
                 </Menu>
               </>
             ) : (
-              <div className="flex items-center gap-2">
+              <>
                 <Link
                   to="/login"
-                  className="text-sm font-medium text-gray-700 hover:text-gray-900 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="px-4 h-10 inline-flex items-center text-sm font-bold text-ink hover:text-saffron transition-colors"
                 >
-                  Sign In
+                  Sign in
                 </Link>
                 <Link
                   to="/register"
-                  className="btn-primary text-sm py-2"
+                  className="bg-saffron text-on-primary uppercase font-bold tracking-[0.05em] text-xs px-6 h-10 inline-flex items-center hover:bg-saffron-active active:scale-[0.98] transition-all duration-100"
                 >
-                  Get Started
+                  Get started
                 </Link>
-              </div>
+              </>
             )}
-
-            {/* Mobile menu button */}
-            <button
-              className="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-              onClick={() => setMobileOpen(!mobileOpen)}
-            >
-              {mobileOpen ? <XMarkIcon className="h-6 w-6" /> : <Bars3Icon className="h-6 w-6" />}
-            </button>
           </div>
-        </div>
-      </div>
 
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div className="md:hidden border-t border-gray-100 bg-white px-4 py-4 space-y-2">
-          {navLinks.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              className="block py-2 text-sm font-medium text-gray-700 hover:text-primary-600"
-              onClick={() => setMobileOpen(false)}
-            >
-              {link.label}
-            </Link>
-          ))}
-          {isAuthenticated && (
-            <Link
-              to={getDashboardLink()}
-              className="block py-2 text-sm font-medium text-gray-700 hover:text-primary-600"
-              onClick={() => setMobileOpen(false)}
-            >
-              Dashboard
-            </Link>
-          )}
+          {/* Mobile burger */}
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="md:hidden h-10 w-10 inline-flex items-center justify-center text-ink"
+            aria-label="Toggle menu"
+          >
+            {mobileOpen ? (
+              <XMarkIcon className="h-6 w-6" />
+            ) : (
+              <Bars3Icon className="h-6 w-6" />
+            )}
+          </button>
         </div>
-      )}
+
+        {/* Mobile drawer */}
+        {mobileOpen && (
+          <div className="md:hidden border-t border-hairline py-4">
+            <div className="flex flex-col gap-1">
+              {NAV_LINKS.map(({ to, label }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  onClick={() => setMobileOpen(false)}
+                  className="px-3 py-3 text-sm font-bold text-ink hover:bg-canvas-warm"
+                >
+                  {label}
+                </Link>
+              ))}
+              <div className="border-t border-hairline my-2" />
+              {isAuthenticated ? (
+                <>
+                  <Link
+                    to={dashboardLink}
+                    onClick={() => setMobileOpen(false)}
+                    className="px-3 py-3 text-sm font-bold text-ink hover:bg-canvas-warm"
+                  >
+                    Dashboard
+                  </Link>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setMobileOpen(false);
+                    }}
+                    className="text-left px-3 py-3 text-sm font-bold text-error hover:bg-error-soft"
+                  >
+                    Sign out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    onClick={() => setMobileOpen(false)}
+                    className="px-3 py-3 text-sm font-bold text-ink hover:bg-canvas-warm"
+                  >
+                    Sign in
+                  </Link>
+                  <Link
+                    to="/register"
+                    onClick={() => setMobileOpen(false)}
+                    className="mt-2 mx-3 bg-saffron text-on-primary uppercase font-bold tracking-[0.05em] text-xs h-10 inline-flex items-center justify-center hover:bg-saffron-active"
+                  >
+                    Get started
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </nav>
   );
-};
-
-export default Navbar;
+}

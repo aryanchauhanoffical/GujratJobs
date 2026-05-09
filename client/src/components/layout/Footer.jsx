@@ -1,70 +1,107 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { BriefcaseIcon } from '@heroicons/react/24/outline';
+/**
+ * Footer — DESIGN.md "Disciplined warmth"
+ *
+ * BMW dark feature band closing — surface-dark, three columns max,
+ * no rounded corners, hairline-thin separators, no emoji.
+ */
 
-const Footer = () => {
+import React from "react";
+import { Link } from "react-router-dom";
+
+const SEEKER_LINKS = [
+  { to: "/jobs", label: "Browse jobs" },
+  { to: "/jobs?isWalkIn=true", label: "Walk-ins" },
+  { to: "/register", label: "Create account" },
+  { to: "/dashboard", label: "My dashboard" },
+];
+
+const RECRUITER_LINKS = [
+  { to: "/register?role=recruiter", label: "Post a job" },
+  { to: "/recruiter/dashboard", label: "Recruiter dashboard" },
+  { to: "/recruiter/profile", label: "Company profile" },
+];
+
+const CITIES = [
+  "Ahmedabad",
+  "Surat",
+  "Vadodara",
+  "Rajkot",
+  "Gandhinagar",
+  "Bhavnagar",
+];
+
+export default function Footer() {
   return (
-    <footer className="bg-gray-900 text-gray-400 mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Brand */}
-          <div className="md:col-span-1">
-            <Link to="/" className="flex items-center gap-2 text-white mb-4">
-              <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-                <BriefcaseIcon className="h-5 w-5 text-white" />
-              </div>
-              <span className="font-bold text-lg">GujaratJobs</span>
+    <footer className="bg-surface-dark text-on-dark mt-auto">
+      <div className="max-w-7xl mx-auto px-6 py-16 lg:py-20">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
+          {/* Brand column */}
+          <div className="col-span-2 md:col-span-1">
+            <Link
+              to="/"
+              className="font-bold text-2xl tracking-tight text-on-dark"
+            >
+              Gujarat<span className="text-marigold">Jobs</span>
             </Link>
-            <p className="text-sm leading-relaxed">
-              Gujarat's leading job platform connecting local talent with top employers across all major cities.
+            <p className="mt-5 text-sm text-on-dark/70 leading-relaxed max-w-xs">
+              Verified recruiters, real walk-ins, and honest hiring — built
+              for Gujarat freshers.
             </p>
           </div>
 
-          {/* Job Seekers */}
-          <div>
-            <h3 className="text-white font-semibold mb-4">For Job Seekers</h3>
-            <ul className="space-y-2 text-sm">
-              <li><Link to="/jobs" className="hover:text-white transition-colors">Browse Jobs</Link></li>
-              <li><Link to="/jobs?isWalkIn=true" className="hover:text-white transition-colors">Walk-in Jobs</Link></li>
-              <li><Link to="/register" className="hover:text-white transition-colors">Create Account</Link></li>
-              <li><Link to="/dashboard" className="hover:text-white transition-colors">My Dashboard</Link></li>
-            </ul>
-          </div>
+          <FooterColumn title="For job seekers" links={SEEKER_LINKS} />
+          <FooterColumn title="For recruiters" links={RECRUITER_LINKS} />
 
-          {/* Recruiters */}
           <div>
-            <h3 className="text-white font-semibold mb-4">For Recruiters</h3>
-            <ul className="space-y-2 text-sm">
-              <li><Link to="/register?role=recruiter" className="hover:text-white transition-colors">Post a Job</Link></li>
-              <li><Link to="/recruiter/dashboard" className="hover:text-white transition-colors">Recruiter Dashboard</Link></li>
-              <li><Link to="/recruiter/profile" className="hover:text-white transition-colors">Company Profile</Link></li>
-            </ul>
-          </div>
-
-          {/* Gujarat Cities */}
-          <div>
-            <h3 className="text-white font-semibold mb-4">Top Cities</h3>
-            <ul className="space-y-2 text-sm">
-              {['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Gandhinagar', 'Bhavnagar'].map(city => (
+            <h3 className="text-[13px] font-bold tracking-[0.15em] uppercase text-on-dark mb-5">
+              Top cities
+            </h3>
+            <ul className="space-y-3">
+              {CITIES.map((city) => (
                 <li key={city}>
-                  <Link to={`/jobs?city=${city}`} className="hover:text-white transition-colors">{city}</Link>
+                  <Link
+                    to={`/jobs?city=${city}`}
+                    className="text-sm text-on-dark/70 hover:text-marigold transition-colors"
+                  >
+                    {city}
+                  </Link>
                 </li>
               ))}
             </ul>
           </div>
         </div>
 
-        <div className="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm">
-          <p>© 2026 GujaratJobs. All rights reserved.</p>
-          <div className="flex items-center gap-1 text-accent-400">
-            <span>Made with</span>
-            <span className="text-red-400">♥</span>
-            <span>for Gujarat</span>
-          </div>
+        <div className="border-t border-on-dark/15 mt-14 pt-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <p className="text-xs text-on-dark/50">
+            © {new Date().getFullYear()} GujaratJobs. All rights reserved.
+          </p>
+          <p className="text-xs text-on-dark/50 tracking-wide">
+            Made in Gujarat, for Gujarat.
+          </p>
         </div>
       </div>
     </footer>
   );
-};
+}
 
-export default Footer;
+function FooterColumn({ title, links }) {
+  return (
+    <div>
+      <h3 className="text-[13px] font-bold tracking-[0.15em] uppercase text-on-dark mb-5">
+        {title}
+      </h3>
+      <ul className="space-y-3">
+        {links.map(({ to, label }) => (
+          <li key={to}>
+            <Link
+              to={to}
+              className="text-sm text-on-dark/70 hover:text-marigold transition-colors"
+            >
+              {label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

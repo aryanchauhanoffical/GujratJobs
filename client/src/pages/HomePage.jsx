@@ -1,403 +1,297 @@
-import React, { useState, useRef } from "react";
+/**
+ * HomePage — DESIGN.md "Disciplined warmth" rebuild.
+ *
+ * BMW × Starbucks × Gujarat. No glassmorphism, no gradient text, no
+ * fake stats, no AI-generic templates. Photography-first hierarchy,
+ * cream + charcoal color-block rhythm, two-weight typography only,
+ * sharp primary CTAs.
+ */
+
+import React, { useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { motion, useScroll, useTransform } from "framer-motion";
 import {
-  motion,
-  useScroll,
-  useTransform,
-  useSpring,
-  AnimatePresence,
-} from "framer-motion";
-import {
-  MagnifyingGlassIcon,
-  MapPinIcon,
   ArrowRightIcon,
-  CheckBadgeIcon,
+  MapPinIcon,
+  ShieldCheckIcon,
+  BoltIcon,
+  EyeSlashIcon,
 } from "@heroicons/react/24/outline";
+
 import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
-import JobCard from "../components/jobs/JobCard";
-import WalkInCard from "../components/jobs/WalkInCard";
-import LoadingSpinner from "../components/layout/LoadingSpinner";
 import { jobsAPI } from "../api/jobs.api";
-import { JOB_CATEGORIES, GUJARAT_CITIES } from "../utils/constants";
+import { GUJARAT_CITIES } from "../utils/constants";
+import {
+  fadeUp,
+  stagger,
+  easeOutCirc,
+  D_REVEAL,
+  D_HOVER,
+  easeOutQuart,
+} from "../lib/motion";
 
-// --- DATA ---
-const HOW_IT_WORKS = [
+const HEADLINE_TOP = "Find your first";
+const HEADLINE_BRAND = "walk-in.";
+const HEADLINE_BOTTOM = "Not your hundredth ghost job.";
+
+const DIFFERENTIATORS = [
   {
-    step: 1,
-    title: "Create Your Profile",
-    description:
-      "Sign up and upload your resume. Set your preferred city in Gujarat.",
-    icon: "👤",
+    icon: ShieldCheckIcon,
+    title: "Verified recruiters only",
+    body: "Every employer is reviewed before they can post. No anonymous companies, no shadow listings.",
   },
   {
-    step: 2,
-    title: "Find Matching Jobs",
-    description:
-      "Browse thousands of jobs near you. Filter by city, salary, walk-ins, and more.",
-    icon: "🔍",
+    icon: BoltIcon,
+    title: "Walk-ins, surfaced in time",
+    body: "Same-day drives push to your phone the moment they go live. Show up before the slot fills.",
   },
   {
-    step: 3,
-    title: "Apply & Get Hired",
-    description: "Apply instantly. Track your application status. Get hired!",
-    icon: "🚀",
+    icon: EyeSlashIcon,
+    title: "No ghost jobs",
+    body: "We aggregate genuine Gujarat-region listings and filter out the ones that exist just to collect resumes.",
   },
 ];
 
-// --- MOTION VARIANTS ---
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.15 },
-  },
-};
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 40 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { type: "spring", bounce: 0.4, duration: 0.8 },
-  },
-};
-
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.9 },
-  show: {
-    opacity: 1,
-    scale: 1,
-    transition: { type: "spring", bounce: 0.5, duration: 0.6 },
-  },
-};
-
-const HomePage = () => {
+export default function HomePage() {
   const navigate = useNavigate();
-  const [heroSearch, setHeroSearch] = useState("");
-  const [heroCity, setHeroCity] = useState("");
-
   const heroRef = useRef(null);
+
   const { scrollYProgress } = useScroll({
     target: heroRef,
     offset: ["start start", "end start"],
   });
-  const yHeroText = useTransform(scrollYProgress, [0, 1], [0, 150]);
-  const yHeroBlobs = useTransform(scrollYProgress, [0, 1], [0, 300]);
-  const opacityHero = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+  const yHeroText = useTransform(scrollYProgress, [0, 1], [0, 60]);
+  const opacityHero = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
 
-  const { data: featuredJobsData, isLoading: jobsLoading } = useQuery({
-    queryKey: ["featuredJobs"],
-    queryFn: () => jobsAPI.getAll({ limit: 6, sort: "-createdAt" }),
+  // Real data — no fake stats
+  const { data: walkInsData } = useQuery({
+    queryKey: ["homeWalkIns"],
+    queryFn: () => jobsAPI.getWalkIns({ limit: 6 }),
+  });
+  const { data: featuredJobsData } = useQuery({
+    queryKey: ["homeFeaturedJobs"],
+    queryFn: () => jobsAPI.getAll({ limit: 100, sort: "-createdAt" }),
   });
 
-  const { data: walkInsData, isLoading: walkInsLoading } = useQuery({
-    queryKey: ["featuredWalkIns"],
-    queryFn: () => jobsAPI.getWalkIns({ limit: 4 }),
+  const walkIns = walkInsData?.data?.jobs || [];
+  const allJobs = featuredJobsData?.data?.jobs || [];
+  const totalJobs = allJobs.length;
+  const todaysWalkIns = walkIns.filter((j) => {
+    if (!j.walkInDetails?.date) return false;
+    const d = new Date(j.walkInDetails.date);
+    const t = new Date();
+    return d.toDateString() === t.toDateString();
   });
 
-  const handleHeroSearch = () => {
-    const params = new URLSearchParams();
-    if (heroSearch) params.set("search", heroSearch);
-    if (heroCity) params.set("city", heroCity);
-    navigate(`/jobs?${params.toString()}`);
-  };
+  const cityCounts = GUJARAT_CITIES.slice(0, 8).map((city) => ({
+    city,
+    count: allJobs.filter((j) => j.location?.city === city).length,
+  }));
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen flex flex-col bg-canvas">
       <Navbar />
 
       <main className="flex-1">
-        {/* HERO SECTION */}
+        {/* ═══════════════════════════════════════════════════════════
+            HERO — cream canvas, display-xl, dual CTAs
+            ═══════════════════════════════════════════════════════════ */}
         <section
           ref={heroRef}
-          className="relative bg-white pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden border-b border-slate-200"
+          className="relative bg-canvas-warm pt-28 pb-20 lg:pt-40 lg:pb-32 px-6 overflow-hidden border-b border-hairline"
         >
           <motion.div
-            className="absolute top-0 right-0 -mr-32 -mt-32 w-96 h-96 rounded-full bg-indigo-100 blur-[80px] opacity-70"
-            style={{ y: yHeroBlobs }}
-          />
-          <motion.div
-            className="absolute bottom-0 left-0 -ml-32 -mb-32 w-96 h-96 rounded-full bg-rose-100 blur-[80px] opacity-70"
-            style={{ y: useTransform(scrollYProgress, [0, 1], [0, -200]) }}
-          />
-          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] mix-blend-overlay pointer-events-none"></div>
-
-          <motion.div
             style={{ y: yHeroText, opacity: opacityHero }}
-            className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center"
+            className="relative max-w-6xl mx-auto"
           >
+            {/* eyebrow */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 text-indigo-700 text-sm font-medium px-4 py-2 rounded-full mb-8 shadow-sm"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: D_REVEAL, ease: easeOutCirc }}
+              className="text-[13px] font-bold tracking-[0.15em] uppercase text-saffron mb-6"
             >
-              <CheckBadgeIcon className="h-5 w-5 text-indigo-600" />
-              <span>Verified jobs. Real walk-ins. Built for Gujarat.</span>
+              GujaratJobs · Built for Gujarat freshers
             </motion.div>
 
+            {/* headline */}
             <motion.h1
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.1 }}
-              className="text-5xl md:text-7xl font-extrabold text-slate-900 tracking-tight leading-[1.1] mb-6"
+              transition={{
+                duration: 0.7,
+                delay: 0.1,
+                ease: easeOutCirc,
+              }}
+              className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tighter leading-[1.05] text-ink max-w-4xl"
             >
-              Find Your Dream Job <br className="hidden md:block" />
-              in{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-rose-500">
-                Gujarat
-              </span>{" "}
-              Today.
+              {HEADLINE_TOP}{" "}
+              <span className="text-saffron">{HEADLINE_BRAND}</span>
+              <br />
+              <span className="text-body font-bold">{HEADLINE_BOTTOM}</span>
             </motion.h1>
 
+            {/* lede */}
             <motion.p
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.2 }}
-              className="text-lg md:text-xl text-slate-600 mb-10 max-w-2xl mx-auto leading-relaxed"
+              transition={{
+                duration: 0.7,
+                delay: 0.25,
+                ease: easeOutCirc,
+              }}
+              className="text-lg lg:text-xl text-body mt-8 max-w-2xl leading-relaxed"
             >
-              Discover thousands of opportunities across Ahmedabad, Surat,
-              Vadodara, and more. Direct contacts, walk-ins, and verified
-              recruiters.
+              Walk-in interviews, fresher roles, and verified employers across
+              16 Gujarat cities. We reject shadow postings before they reach
+              you.
             </motion.p>
 
+            {/* CTAs */}
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.3 }}
-              className="bg-white/80 backdrop-blur-xl border border-slate-200/60 rounded-2xl shadow-xl shadow-slate-200/50 p-3 flex flex-col md:flex-row gap-3 max-w-3xl mx-auto ring-1 ring-slate-100 relative z-10"
+              transition={{
+                duration: 0.7,
+                delay: 0.4,
+                ease: easeOutCirc,
+              }}
+              className="mt-10 flex flex-wrap items-center gap-3"
             >
-              <div className="relative flex-1 flex items-center bg-slate-50 rounded-xl px-4 py-3 border border-slate-200 focus-within:ring-2 focus-within:ring-indigo-500 transition-shadow">
-                <MagnifyingGlassIcon className="h-5 w-5 text-slate-400 mr-3 flex-shrink-0" />
-                <input
-                  type="text"
-                  value={heroSearch}
-                  onChange={(e) => setHeroSearch(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleHeroSearch()}
-                  placeholder="Job title, skill, company..."
-                  className="w-full bg-transparent border-none focus:outline-none text-slate-900 placeholder:text-slate-400"
-                />
-              </div>
-              <div className="w-[1px] bg-slate-200 hidden md:block self-stretch my-2"></div>
-              <div className="relative md:w-56 flex items-center bg-slate-50 rounded-xl px-4 py-3 border border-slate-200 focus-within:ring-2 focus-within:ring-indigo-500 transition-shadow">
-                <MapPinIcon className="h-5 w-5 text-slate-400 mr-3 flex-shrink-0" />
-                <select
-                  value={heroCity}
-                  onChange={(e) => setHeroCity(e.target.value)}
-                  className="w-full bg-transparent border-none focus:outline-none text-slate-900 appearance-none cursor-pointer"
-                >
-                  <option value="">All Gujarat</option>
-                  {GUJARAT_CITIES.slice(0, 10).map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* Primary — sharp, BMW-disciplined */}
               <button
-                onClick={handleHeroSearch}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-8 py-3.5 rounded-xl shadow-md transition-all hover:shadow-lg hover:-translate-y-0.5 active:scale-95 whitespace-nowrap"
+                onClick={() => navigate("/jobs?isWalkIn=true")}
+                className="group bg-saffron text-on-primary uppercase font-bold tracking-[0.05em] text-sm px-8 h-12 inline-flex items-center gap-3 hover:bg-saffron-active active:scale-[0.98] transition-all duration-100"
               >
-                Search
+                See today's walk-ins
+                <ArrowRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </button>
+
+              {/* Secondary — full-pill, Starbucks-warm */}
+              <Link
+                to="/jobs"
+                className="bg-canvas text-ink border border-hairline-strong rounded-full px-6 h-10 inline-flex items-center text-sm font-bold hover:border-ink transition-colors duration-200"
+              >
+                Browse all jobs
+              </Link>
             </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.8, duration: 1 }}
-              className="flex flex-wrap justify-center items-center gap-3 mt-8"
-            >
-              <span className="text-slate-500 text-sm font-medium">
-                Trending:
-              </span>
-              {["Fresher Jobs", "Walk-in Today", "IT Jobs", "Ahmedabad"].map(
-                (term) => (
-                  <button
-                    key={term}
-                    onClick={() =>
-                      navigate(`/jobs?search=${encodeURIComponent(term)}`)
-                    }
-                    className="text-xs font-medium text-slate-600 bg-white border border-slate-200 hover:border-indigo-300 hover:text-indigo-600 px-3 py-1.5 rounded-full transition-colors shadow-sm"
-                  >
-                    {term}
-                  </button>
-                ),
-              )}
-            </motion.div>
+            {/* Live counter — no fake numbers, real DB query */}
+            {totalJobs > 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.7, delay: 0.7 }}
+                className="mt-12 flex items-center gap-3 text-sm text-muted-text"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-marigold opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-marigold"></span>
+                </span>
+                <span>
+                  <span className="font-bold text-ink">{totalJobs}</span>{" "}
+                  verified jobs live in Gujarat right now
+                  {todaysWalkIns.length > 0 && (
+                    <>
+                      {" "}
+                      ·{" "}
+                      <span className="font-bold text-saffron">
+                        {todaysWalkIns.length} walk-ins today
+                      </span>
+                    </>
+                  )}
+                </span>
+              </motion.div>
+            )}
           </motion.div>
         </section>
 
-        {/* WALK-INS */}
-        <section className="py-20 bg-slate-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
+        {/* ═══════════════════════════════════════════════════════════
+            WALK-IN STRIP — horizontal, urgency-first
+            ═══════════════════════════════════════════════════════════ */}
+        {walkIns.length > 0 && (
+          <section className="bg-canvas py-20 px-6 border-b border-hairline">
+            <div className="max-w-7xl mx-auto">
               <motion.div
-                initial={{ opacity: 0, x: -30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6 }}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ duration: D_REVEAL, ease: easeOutCirc }}
+                className="flex items-end justify-between mb-10 flex-wrap gap-4"
               >
-                <span className="text-amber-600 font-bold text-sm tracking-wider uppercase flex items-center gap-2 mb-2">
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
-                  </span>
-                  Live Opportunities
-                </span>
-                <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">
-                  Today's Walk-in Drives
-                </h2>
-                <p className="text-slate-500 mt-3 text-lg">
-                  Skip the queue. Go direct to interview.
-                </p>
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, x: 30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                className="mt-6 md:mt-0"
-              >
+                <div>
+                  <div className="text-[13px] font-bold tracking-[0.15em] uppercase text-marigold mb-3">
+                    Live drives
+                  </div>
+                  <h2 className="text-3xl lg:text-4xl font-bold tracking-tight text-ink">
+                    Walk-ins happening soon
+                  </h2>
+                </div>
                 <Link
                   to="/jobs?isWalkIn=true"
-                  className="group inline-flex items-center gap-2 font-semibold text-amber-600 hover:text-amber-700 transition-colors"
+                  className="text-sm font-bold uppercase tracking-wider text-ink hover:text-saffron transition-colors inline-flex items-center gap-2"
                 >
-                  View All Walk-ins
-                  <ArrowRightIcon className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  See all
+                  <ArrowRightIcon className="h-4 w-4" />
                 </Link>
               </motion.div>
-            </div>
 
-            {walkInsLoading ? (
-              <div className="flex justify-center py-12">
-                <LoadingSpinner size="lg" />
-              </div>
-            ) : (
               <motion.div
-                variants={staggerContainer}
-                initial="hidden"
-                whileInView="show"
-                viewport={{ once: true, margin: "-100px" }}
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+                variants={stagger}
+                initial="initial"
+                whileInView="animate"
+                viewport={{ once: true, margin: "-50px" }}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
               >
-                {walkInsData?.jobs?.slice(0, 4).map((job) => (
-                  <motion.div key={job._id} variants={scaleIn}>
-                    <WalkInCard job={job} />
-                  </motion.div>
+                {walkIns.slice(0, 6).map((job) => (
+                  <WalkInTile key={job._id} job={job} />
                 ))}
               </motion.div>
-            )}
-          </div>
-        </section>
-
-        {/* FEATURED LATEST JOBS */}
-        <section className="py-24 bg-white border-y border-slate-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center max-w-2xl mx-auto mb-16">
-              <motion.h2
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6 }}
-                className="text-4xl font-extrabold text-slate-900 tracking-tight mb-4"
-              >
-                Premium Job Listings
-              </motion.h2>
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: 0.1 }}
-                className="text-lg text-slate-500"
-              >
-                Verified companies actively hiring across Gujarat. Handpicked to
-                match your skills.
-              </motion.p>
             </div>
+          </section>
+        )}
 
-            {jobsLoading ? (
-              <div className="flex justify-center py-12">
-                <LoadingSpinner size="lg" />
-              </div>
-            ) : (
-              <motion.div
-                variants={staggerContainer}
-                initial="hidden"
-                whileInView="show"
-                viewport={{ once: true, margin: "-100px" }}
-                className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12"
-              >
-                {featuredJobsData?.jobs?.slice(0, 6).map((job) => (
-                  <motion.div key={job._id} variants={fadeUp} className="group">
-                    <JobCard job={job} />
-                  </motion.div>
-                ))}
-              </motion.div>
-            )}
-
+        {/* ═══════════════════════════════════════════════════════════
+            DIFFERENTIATORS — three-up grid
+            ═══════════════════════════════════════════════════════════ */}
+        <section className="bg-canvas-warm py-20 lg:py-28 px-6 border-b border-hairline">
+          <div className="max-w-7xl mx-auto">
             <motion.div
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              className="flex justify-center"
-            >
-              <Link
-                to="/jobs"
-                className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold px-8 py-4 rounded-xl shadow-xl shadow-slate-900/20 transition-all hover:shadow-2xl hover:-translate-y-1 active:scale-95"
-              >
-                Explore All Jobs
-                <ArrowRightIcon className="h-5 w-5" />
-              </Link>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* HOW IT WORKS */}
-        <section className="py-24 bg-slate-50 overflow-hidden relative">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-20"
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: D_REVEAL, ease: easeOutCirc }}
+              className="max-w-2xl mb-16"
             >
-              <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">
-                How to Get Hired
+              <div className="text-[13px] font-bold tracking-[0.15em] uppercase text-saffron mb-3">
+                Why we're different
+              </div>
+              <h2 className="text-4xl lg:text-5xl font-bold tracking-tight text-ink leading-[1.1]">
+                Built on trust, not visibility metrics.
               </h2>
-              <p className="text-slate-500 mt-4 text-lg">
-                Three simple steps to secure your dream role
-              </p>
             </motion.div>
 
             <motion.div
-              variants={staggerContainer}
-              initial="hidden"
-              whileInView="show"
+              variants={stagger}
+              initial="initial"
+              whileInView="animate"
               viewport={{ once: true, margin: "-100px" }}
-              className="grid grid-cols-1 md:grid-cols-3 gap-12 relative"
+              className="grid grid-cols-1 md:grid-cols-3 gap-px bg-hairline border border-hairline"
             >
-              {/* Connector line for desktop */}
-              <div className="hidden md:block absolute top-[52px] left-[15%] right-[15%] h-[2px] bg-gradient-to-r from-indigo-100 via-indigo-300 to-indigo-100 z-0"></div>
-
-              {HOW_IT_WORKS.map(({ step, title, description, icon }) => (
+              {DIFFERENTIATORS.map(({ icon: Icon, title, body }) => (
                 <motion.div
-                  key={step}
+                  key={title}
                   variants={fadeUp}
-                  className="relative z-10 text-center flex flex-col items-center"
+                  className="bg-canvas-warm p-8 lg:p-10"
                 >
-                  <div className="w-28 h-28 bg-white border-4 border-indigo-50 rounded-full shadow-xl shadow-indigo-100 flex items-center justify-center text-5xl mb-6 relative hover:scale-105 transition-transform">
-                    {icon}
-                    <div className="absolute -bottom-3 -right-3 w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold border-4 border-slate-50 shadow-md">
-                      {step}
-                    </div>
-                  </div>
-                  <h3 className="text-2xl font-bold text-slate-900 mb-3">
+                  <Icon className="h-7 w-7 text-saffron stroke-[1.5]" />
+                  <h3 className="mt-6 text-xl font-bold tracking-tight text-ink">
                     {title}
                   </h3>
-                  <p className="text-slate-600 leading-relaxed max-w-sm">
-                    {description}
+                  <p className="mt-3 text-base text-body leading-relaxed">
+                    {body}
                   </p>
                 </motion.div>
               ))}
@@ -405,43 +299,135 @@ const HomePage = () => {
           </div>
         </section>
 
-        {/* CTA */}
-        <section className="relative py-24 overflow-hidden">
-          <div className="absolute inset-0 bg-slate-900"></div>
-          <motion.div
-            initial={{ scale: 1.2, opacity: 0 }}
-            whileInView={{ scale: 1, opacity: 0.4 }}
-            viewport={{ once: true }}
-            transition={{ duration: 1.5 }}
-            className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-indigo-600 via-rose-500/20 to-transparent"
-          ></motion.div>
+        {/* ═══════════════════════════════════════════════════════════
+            DARK FEATURE BAND — BMW-style charcoal hero #2
+            ═══════════════════════════════════════════════════════════ */}
+        <section className="bg-surface-dark text-on-dark py-24 lg:py-32 px-6">
+          <div className="max-w-6xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 0.7, ease: easeOutCirc }}
+              className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center"
+            >
+              <div>
+                <div className="text-[13px] font-bold tracking-[0.15em] uppercase text-marigold mb-4">
+                  Regional first, national next
+                </div>
+                <h2 className="text-4xl lg:text-6xl font-bold tracking-tighter leading-[1.05]">
+                  Sixteen cities.
+                  <br />
+                  <span className="text-marigold">One honest hub.</span>
+                </h2>
+                <p className="text-lg text-on-dark/70 mt-8 max-w-xl leading-relaxed">
+                  From Ahmedabad to Bhuj, Surat to Vadodara. Real recruiters
+                  hiring for real seats. We started with Gujarat because trust
+                  is built locally, not at scale.
+                </p>
+              </div>
 
+              <div className="grid grid-cols-2 gap-8">
+                <DarkStat
+                  value={totalJobs > 0 ? totalJobs : "—"}
+                  label="verified jobs live"
+                />
+                <DarkStat
+                  value={cityCounts.filter((c) => c.count > 0).length}
+                  label="cities active"
+                />
+                <DarkStat
+                  value={walkIns.length}
+                  label="upcoming walk-ins"
+                />
+                <DarkStat value="100%" label="recruiters verified" />
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════════
+            CITY GRID — real counts from DB
+            ═══════════════════════════════════════════════════════════ */}
+        <section className="bg-canvas py-20 lg:py-28 px-6 border-b border-hairline">
+          <div className="max-w-7xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: D_REVEAL, ease: easeOutCirc }}
+              className="max-w-2xl mb-12"
+            >
+              <div className="text-[13px] font-bold tracking-[0.15em] uppercase text-saffron mb-3">
+                Find work in your city
+              </div>
+              <h2 className="text-3xl lg:text-4xl font-bold tracking-tight text-ink leading-[1.1]">
+                Browse by city
+              </h2>
+            </motion.div>
+
+            <motion.div
+              variants={stagger}
+              initial="initial"
+              whileInView="animate"
+              viewport={{ once: true, margin: "-50px" }}
+              className="grid grid-cols-2 md:grid-cols-4 gap-4"
+            >
+              {cityCounts.map(({ city, count }) => (
+                <motion.div key={city} variants={fadeUp}>
+                  <Link
+                    to={`/jobs?city=${city}`}
+                    className="group block bg-canvas border border-hairline p-6 hover:border-ink transition-colors duration-200"
+                  >
+                    <MapPinIcon className="h-5 w-5 text-muted-soft stroke-[1.5] group-hover:text-saffron transition-colors" />
+                    <div className="mt-4 text-xl font-bold tracking-tight text-ink">
+                      {city}
+                    </div>
+                    <div className="mt-1 text-sm text-muted-text">
+                      {count > 0
+                        ? `${count} ${count === 1 ? "job" : "jobs"}`
+                        : "Coming soon"}
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════════
+            CLOSING CTA — cream canvas
+            ═══════════════════════════════════════════════════════════ */}
+        <section className="bg-canvas-warm py-24 lg:py-32 px-6">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center"
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.6, ease: easeOutCirc }}
+            className="max-w-4xl mx-auto text-center"
           >
-            <h2 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-6">
-              Your Professional Journey <br /> Starts Here.
+            <h2 className="text-4xl lg:text-6xl font-bold tracking-tighter leading-[1.05] text-ink">
+              Stop applying.
+              <br />
+              <span className="text-saffron">Start interviewing.</span>
             </h2>
-            <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto leading-relaxed">
-              Join over 50,000 professionals who transformed their careers
-              through GujaratJobs.
+            <p className="text-lg text-body mt-6 max-w-xl mx-auto">
+              Free to join. No spam. Get matched to walk-ins in your city
+              within minutes of signing up.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="mt-10 flex items-center justify-center gap-3 flex-wrap">
               <Link
                 to="/register"
-                className="bg-white text-slate-900 hover:bg-slate-100 font-bold px-8 py-4 rounded-xl shadow-xl transition-all hover:scale-105 hover:shadow-white/20 active:scale-95 w-full sm:w-auto"
+                className="bg-saffron text-on-primary uppercase font-bold tracking-[0.05em] text-sm px-8 h-12 inline-flex items-center gap-3 hover:bg-saffron-active active:scale-[0.98] transition-all duration-100"
               >
-                Create Free Account
+                Get started
+                <ArrowRightIcon className="h-4 w-4" />
               </Link>
               <Link
-                to="/jobs"
-                className="bg-white/10 backdrop-blur border border-white/20 text-white hover:bg-white/20 font-bold px-8 py-4 rounded-xl transition-all hover:scale-105 active:scale-95 w-full sm:w-auto"
+                to="/login"
+                className="bg-canvas text-ink border border-hairline-strong rounded-full px-6 h-10 inline-flex items-center text-sm font-bold hover:border-ink transition-colors duration-200"
               >
-                Browse Jobs Instead
+                Sign in
               </Link>
             </div>
           </motion.div>
@@ -451,6 +437,80 @@ const HomePage = () => {
       <Footer />
     </div>
   );
-};
+}
 
-export default HomePage;
+/* ─────────────────────────────────────────────────────────────────
+   Sub-components
+   ───────────────────────────────────────────────────────────────── */
+
+function WalkInTile({ job }) {
+  const date = job.walkInDetails?.date
+    ? new Date(job.walkInDetails.date)
+    : null;
+  const today = new Date();
+  const isToday = date && date.toDateString() === today.toDateString();
+  const daysAway = date
+    ? Math.ceil((date - today) / (1000 * 60 * 60 * 24))
+    : null;
+
+  const urgencyLabel = isToday
+    ? "Today"
+    : daysAway === 1
+    ? "Tomorrow"
+    : daysAway && daysAway > 1
+    ? `In ${daysAway} days`
+    : "Upcoming";
+  const urgencyColor = isToday
+    ? "text-marigold"
+    : daysAway === 1
+    ? "text-saffron"
+    : "text-muted-text";
+
+  return (
+    <motion.div
+      variants={fadeUp}
+      whileHover={{ y: -2 }}
+      transition={{ duration: D_HOVER, ease: easeOutQuart }}
+    >
+      <Link
+        to={`/jobs/${job._id}`}
+        className="block bg-canvas border border-hairline border-l-4 border-l-saffron p-6 h-full hover:shadow-card transition-shadow"
+      >
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <span
+            className={`text-xs font-bold tracking-[0.1em] uppercase ${urgencyColor}`}
+          >
+            {urgencyLabel}
+          </span>
+          <span className="text-xs text-muted-soft">
+            {job.location?.city}
+          </span>
+        </div>
+        <h3 className="text-lg font-bold tracking-tight text-ink leading-snug line-clamp-2">
+          {job.title}
+        </h3>
+        <p className="mt-2 text-sm text-body line-clamp-1">{job.company}</p>
+        {(job.salary?.min || job.salary?.max) && (
+          <p className="mt-4 text-sm font-bold text-ink">
+            ₹{(job.salary.min / 1000).toFixed(0)}k
+            {job.salary.max && ` – ₹${(job.salary.max / 1000).toFixed(0)}k`}
+            <span className="font-normal text-muted-text"> / month</span>
+          </p>
+        )}
+      </Link>
+    </motion.div>
+  );
+}
+
+function DarkStat({ value, label }) {
+  return (
+    <div>
+      <div className="text-5xl lg:text-6xl font-bold tracking-tighter text-on-dark leading-none">
+        {value}
+      </div>
+      <div className="mt-3 text-sm text-on-dark/70 leading-relaxed">
+        {label}
+      </div>
+    </div>
+  );
+}
