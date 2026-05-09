@@ -81,13 +81,58 @@ export default {
           green: '#138808',
           blue: '#000080',
         },
+        // GujaratJobs brand tokens — Disciplined warmth (BMW × Starbucks × Gujarat)
+        saffron: {
+          DEFAULT: '#C44A0F',
+          active: '#A23A0A',
+          disabled: '#E8C4B0',
+        },
+        marigold: {
+          DEFAULT: '#F59E0B',
+          soft: '#FCD34D',
+        },
+        canvas: {
+          DEFAULT: '#FFFFFF',
+          warm: '#FBF7F0',
+        },
+        surface: {
+          soft: '#F7F7F7',
+          card: '#FAFAFA',
+          dark: '#1A1A1A',
+          'dark-elevated': '#262E38',
+        },
+        ink: '#1A1A1A',
+        body: '#3C3C3C',
+        'muted-text': '#6B6B6B',
+        'muted-soft': '#9A9A9A',
+        hairline: {
+          DEFAULT: '#E6E6E6',
+          strong: '#CCCCCC',
+        },
+        'on-primary': '#FFFFFF',
+        'on-dark': '#FFFFFF',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },
       boxShadow: {
-        card: '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
-        'card-hover': '0 10px 40px -10px rgba(79, 70, 229, 0.2)',
+        // Restrained — only two shadow tiers per DESIGN.md §6
+        card: '0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04)',
+        modal: '0 8px 16px rgba(0,0,0,0.08), 0 20px 40px rgba(0,0,0,0.12)',
+        // Legacy
+        'card-hover': '0 10px 40px -10px rgba(196, 74, 15, 0.15)',
+      },
+      fontWeight: {
+        // Two-weight discipline (BMW). Anything outside 400/700 is wrong.
+        normal: '400',
+        bold: '700',
+      },
+      letterSpacing: {
+        // BMW + Starbucks blend — tight, confident
+        tighter: '-0.02em',
+        tight: '-0.018em',
+        snug: '-0.014em',
+        normal: '-0.011em',
       },
       animation: {
         'fade-in': 'fadeIn 0.3s ease-in-out',
