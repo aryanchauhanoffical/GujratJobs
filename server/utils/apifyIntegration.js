@@ -5,7 +5,7 @@ const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
 
 // Apify Actor IDs — using popular, actively-maintained actors
 const ACTORS = {
-  LINKEDIN_JOBS: "bebity~linkedin-jobs-scraper",
+  LINKEDIN_JOBS: "curious_coder~linkedin-jobs-scraper",
   INDEED_SCRAPER: "misceres~indeed-scraper",
   NAUKRI_SCRAPER: "epicscrapers~naukri-scraper",
 };
@@ -317,13 +317,22 @@ const scrapeGujaratJobs = async (
   console.log("Starting Gujarat jobs scraping...");
   const allJobs = [];
 
-  // Scrape LinkedIn (bebity actor — uses `title` + `location` + `rows`)
+  // Scrape LinkedIn (curious_coder actor — uses `urls` + `count`)
   try {
     console.log("Scraping LinkedIn...");
+    const linkedInUrls = keywords.map((kw) => {
+      const params = new URLSearchParams({
+        keywords: kw,
+        location: location,
+        f_TPR: "r604800", // last 7 days
+      });
+      return `https://www.linkedin.com/jobs/search/?${params.toString()}`;
+    });
+
     const linkedInRaw = await runApifyActor(ACTORS.LINKEDIN_JOBS, {
-      title: keywords[0],
-      location: location,
-      rows: 30,
+      urls: linkedInUrls,
+      count: 30,
+      scrapeCompany: false,
       proxy: { useApifyProxy: true },
     });
 
