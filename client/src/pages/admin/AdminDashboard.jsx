@@ -28,17 +28,16 @@ export default function AdminDashboard() {
     retry: false,
   });
 
-  // Fallback demo stats
   const displayStats = stats || {
-    totalUsers: 15420,
-    totalRecruiters: 1280,
-    pendingRecruiters: 34,
-    totalJobs: 8750,
-    activeJobs: 4320,
-    scrapedJobs: 3100,
-    totalApplications: 52000,
-    totalHired: 8900,
-    flaggedJobs: 12,
+    totalUsers: 0,
+    totalRecruiters: 0,
+    pendingRecruiters: 0,
+    totalJobs: 0,
+    activeJobs: 0,
+    scrapedJobs: 0,
+    totalApplications: 0,
+    totalHired: 0,
+    flaggedJobs: 0,
   };
 
   const statCards = [

@@ -26,65 +26,6 @@ const ADMIN_SIDEBAR_LINKS = [
   { label: 'Scraped Jobs', href: '/admin/scraped-jobs', icon: ClipboardDocumentListIcon },
 ];
 
-const DEMO_RECRUITERS = [
-  {
-    _id: 'r1',
-    name: 'Mehul Trivedi',
-    email: 'mehul@techcorp.com',
-    companyName: 'TechCorp Solutions',
-    industry: 'Information Technology',
-    location: { city: 'Ahmedabad', state: 'Gujarat' },
-    website: 'techcorp.in',
-    isApproved: true,
-    isActive: true,
-    jobsPosted: 12,
-    totalHired: 8,
-    createdAt: '2024-01-10T10:00:00Z',
-  },
-  {
-    _id: 'r2',
-    name: 'Shreya Kapoor',
-    email: 'shreya@textilemill.com',
-    companyName: 'Surat Textile Mill',
-    industry: 'Manufacturing',
-    location: { city: 'Surat', state: 'Gujarat' },
-    website: 'surattextile.com',
-    isApproved: false,
-    isActive: true,
-    jobsPosted: 0,
-    totalHired: 0,
-    createdAt: '2024-03-20T10:00:00Z',
-  },
-  {
-    _id: 'r3',
-    name: 'Rohan Mehta',
-    email: 'rohan@logisticspro.com',
-    companyName: 'Gujarat Logistics Pro',
-    industry: 'Logistics & Supply Chain',
-    location: { city: 'Vadodara', state: 'Gujarat' },
-    website: '',
-    isApproved: false,
-    isActive: true,
-    jobsPosted: 0,
-    totalHired: 0,
-    createdAt: '2024-03-22T10:00:00Z',
-  },
-  {
-    _id: 'r4',
-    name: 'Nita Parmar',
-    email: 'nita@financeplus.com',
-    companyName: 'FinancePlus Advisors',
-    industry: 'Finance & Banking',
-    location: { city: 'Rajkot', state: 'Gujarat' },
-    website: 'financeplus.co',
-    isApproved: true,
-    isActive: true,
-    jobsPosted: 5,
-    totalHired: 3,
-    createdAt: '2024-02-05T10:00:00Z',
-  },
-];
-
 export default function ManageRecruitersPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
@@ -100,7 +41,7 @@ export default function ManageRecruitersPage() {
     retry: false,
   });
 
-  const recruiters = data?.recruiters || DEMO_RECRUITERS;
+  const recruiters = data?.recruiters || [];
 
   const filteredRecruiters = recruiters.filter((r) => {
     if (filterStatus === 'pending') return !r.isApproved;

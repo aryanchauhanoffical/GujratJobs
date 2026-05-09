@@ -308,15 +308,6 @@ const LoginPage = () => {
               </div>
             </div>
 
-            {/* Demo credentials */}
-            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-4">
-              <p className="text-xs font-semibold text-blue-700 mb-2">Demo Credentials</p>
-              <div className="space-y-1 text-xs text-blue-600">
-                <p>Job Seeker: seeker@demo.com / demo123</p>
-                <p>Recruiter: recruiter@demo.com / demo123</p>
-                <p>Admin: admin@gujaratjobs.in / Admin@123456</p>
-              </div>
-            </div>
           </div>
 
         </div>

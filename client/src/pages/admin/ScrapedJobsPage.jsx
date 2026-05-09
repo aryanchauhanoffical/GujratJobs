@@ -43,61 +43,6 @@ const SOURCE_COLORS = {
   manual: "bg-green-100 text-green-700",
 };
 
-const DEMO_SCRAPED_JOBS = [
-  {
-    _id: "sj1",
-    title: "Software Developer (Fresher)",
-    company: "Infosys BPM",
-    location: { city: "Ahmedabad", state: "Gujarat" },
-    salary: { min: 20000, max: 35000 },
-    experienceLevel: "fresher",
-    source: "linkedin",
-    sourceUrl: "https://linkedin.com/jobs/123",
-    tags: ["Java", "Python", "SQL"],
-    status: "pending",
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    _id: "sj2",
-    title: "Sales Executive",
-    company: "HDFC Bank",
-    location: { city: "Surat", state: "Gujarat" },
-    salary: { min: 18000, max: 28000 },
-    experienceLevel: "fresher",
-    source: "naukri",
-    sourceUrl: "https://naukri.com/job/456",
-    tags: ["Sales", "Banking", "Communication"],
-    status: "approved",
-    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    _id: "sj3",
-    title: "Data Entry Operator",
-    company: "Generic Corp",
-    location: { city: "Vadodara", state: "Gujarat" },
-    salary: { min: 10000, max: 12000 },
-    experienceLevel: "fresher",
-    source: "indeed",
-    sourceUrl: "https://indeed.com/job/789",
-    tags: ["Data Entry", "MS Office"],
-    status: "flagged",
-    createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    _id: "sj4",
-    title: "React Developer",
-    company: "StartupX",
-    location: { city: "Rajkot", state: "Gujarat" },
-    salary: { min: 25000, max: 40000 },
-    experienceLevel: "junior",
-    source: "linkedin",
-    sourceUrl: "https://linkedin.com/jobs/101",
-    tags: ["React", "JavaScript", "Node.js"],
-    status: "pending",
-    createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-  },
-];
-
 export default function ScrapedJobsPage() {
   const queryClient = useQueryClient();
   const [filterStatus, setFilterStatus] = useState("all");
@@ -116,7 +61,7 @@ export default function ScrapedJobsPage() {
     retry: false,
   });
 
-  const jobs = data?.jobs || DEMO_SCRAPED_JOBS;
+  const jobs = data?.jobs || [];
 
   const filteredJobs = jobs.filter((j) => {
     if (filterStatus !== "all" && j.status !== filterStatus) return false;

@@ -34,15 +34,6 @@ const fetchUsers = async (filters) => {
   return data.data;
 };
 
-// Demo data fallback
-const DEMO_USERS = [
-  { _id: '1', name: 'Priya Patel', email: 'priya@example.com', role: 'jobseeker', location: { city: 'Ahmedabad', state: 'Gujarat' }, isVerified: true, isActive: true, createdAt: '2024-01-15T10:00:00Z', applicationsCount: 12 },
-  { _id: '2', name: 'Rahul Shah', email: 'rahul@example.com', role: 'jobseeker', location: { city: 'Surat', state: 'Gujarat' }, isVerified: true, isActive: true, createdAt: '2024-01-20T10:00:00Z', applicationsCount: 7 },
-  { _id: '3', name: 'Anita Desai', email: 'anita@example.com', role: 'jobseeker', location: { city: 'Vadodara', state: 'Gujarat' }, isVerified: false, isActive: true, createdAt: '2024-02-01T10:00:00Z', applicationsCount: 3 },
-  { _id: '4', name: 'Kiran Modi', email: 'kiran@example.com', role: 'jobseeker', location: { city: 'Rajkot', state: 'Gujarat' }, isVerified: true, isActive: false, createdAt: '2024-02-10T10:00:00Z', applicationsCount: 0 },
-  { _id: '5', name: 'Divya Joshi', email: 'divya@example.com', role: 'jobseeker', location: { city: 'Gandhinagar', state: 'Gujarat' }, isVerified: true, isActive: true, createdAt: '2024-02-15T10:00:00Z', applicationsCount: 15 },
-];
-
 export default function ManageUsersPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
@@ -56,7 +47,7 @@ export default function ManageUsersPage() {
     retry: false,
   });
 
-  const users = data?.users || DEMO_USERS;
+  const users = data?.users || [];
   const totalPages = data?.totalPages || 1;
 
   const toggleStatus = useMutation({

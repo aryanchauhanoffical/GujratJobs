@@ -11,14 +11,9 @@ import {
 import {
   MagnifyingGlassIcon,
   MapPinIcon,
-  BriefcaseIcon,
   ArrowRightIcon,
-  UserGroupIcon,
-  BuildingOfficeIcon,
-  CalendarDaysIcon,
   CheckBadgeIcon,
 } from "@heroicons/react/24/outline";
-import { StarIcon } from "@heroicons/react/24/solid";
 import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
 import JobCard from "../components/jobs/JobCard";
@@ -28,37 +23,6 @@ import { jobsAPI } from "../api/jobs.api";
 import { JOB_CATEGORIES, GUJARAT_CITIES } from "../utils/constants";
 
 // --- DATA ---
-const STATS = [
-  {
-    label: "Jobs Posted",
-    value: "12,500+",
-    icon: BriefcaseIcon,
-    color: "text-indigo-600",
-    bg: "bg-indigo-100",
-  },
-  {
-    label: "Companies Hiring",
-    value: "2,400+",
-    icon: BuildingOfficeIcon,
-    color: "text-emerald-600",
-    bg: "bg-emerald-100",
-  },
-  {
-    label: "Walk-ins Weekly",
-    value: "350+",
-    icon: CalendarDaysIcon,
-    color: "text-amber-500",
-    bg: "bg-amber-100",
-  },
-  {
-    label: "Candidates Hired",
-    value: "8,900+",
-    icon: UserGroupIcon,
-    color: "text-violet-600",
-    bg: "bg-violet-100",
-  },
-];
-
 const HOW_IT_WORKS = [
   {
     step: 1,
@@ -79,36 +43,6 @@ const HOW_IT_WORKS = [
     title: "Apply & Get Hired",
     description: "Apply instantly. Track your application status. Get hired!",
     icon: "🚀",
-  },
-];
-
-const TESTIMONIALS = [
-  {
-    name: "Priya Patel",
-    city: "Ahmedabad",
-    role: "Software Developer",
-    company: "TechSol India",
-    review:
-      "Found my dream job at an Ahmedabad startup within 2 weeks! The walk-in feature helped me get hired faster.",
-    rating: 5,
-  },
-  {
-    name: "Ravi Shah",
-    city: "Surat",
-    role: "Sales Executive",
-    company: "Diamond Corp",
-    review:
-      "GujaratJobs is amazing for finding local opportunities. The guaranteed hiring badge gives confidence.",
-    rating: 5,
-  },
-  {
-    name: "Meera Desai",
-    city: "Vadodara",
-    role: "HR Manager",
-    company: "Reliance Petro",
-    review:
-      "As a recruiter, I found highly qualified local candidates quickly. The platform truly understands Gujarat.",
-    rating: 5,
   },
 ];
 
@@ -201,7 +135,7 @@ const HomePage = () => {
               className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 text-indigo-700 text-sm font-medium px-4 py-2 rounded-full mb-8 shadow-sm"
             >
               <CheckBadgeIcon className="h-5 w-5 text-indigo-600" />
-              <span>Trusted by 2,400+ Companies in Gujarat</span>
+              <span>Verified jobs. Real walk-ins. Built for Gujarat.</span>
             </motion.div>
 
             <motion.h1
@@ -293,37 +227,6 @@ const HomePage = () => {
                 ),
               )}
             </motion.div>
-          </motion.div>
-        </section>
-
-        {/* STATS BENTO GRID */}
-        <section className="relative z-10 -mt-10 mb-16 mx-4">
-          <motion.div
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-50px" }}
-            className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6"
-          >
-            {STATS.map(({ label, value, icon: Icon, color, bg }) => (
-              <motion.div
-                key={label}
-                variants={fadeUp}
-                className="bg-white/80 backdrop-blur-xl border border-slate-200/60 p-6 rounded-3xl shadow-xl shadow-slate-200/50 flex flex-col items-center text-center transform-gpu hover:-translate-y-1 transition-transform duration-300"
-              >
-                <div
-                  className={`w-12 h-12 rounded-2xl ${bg} flex items-center justify-center mb-4`}
-                >
-                  <Icon className={`h-6 w-6 ${color}`} />
-                </div>
-                <div className="text-3xl font-extrabold text-slate-900 tracking-tight mb-1">
-                  {value}
-                </div>
-                <div className="text-sm font-medium text-slate-500">
-                  {label}
-                </div>
-              </motion.div>
-            ))}
           </motion.div>
         </section>
 
