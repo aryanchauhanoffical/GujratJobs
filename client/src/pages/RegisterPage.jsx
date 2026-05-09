@@ -1,22 +1,53 @@
-import React, { useState } from 'react';
-import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { EyeIcon, EyeSlashIcon, BriefcaseIcon, UserIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline';
-import { useAuth } from '../context/AuthContext';
+/**
+ * RegisterPage — DESIGN.md "Disciplined warmth"
+ *
+ * Mirror of LoginPage layout: form left, value-prop right. Role
+ * selector with sharp-cornered animated cards.
+ */
 
-const RegisterPage = () => {
-  const { register: authRegister, isAuthenticated } = useAuth();
+import React, { useState } from "react";
+import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { motion, LayoutGroup } from "framer-motion";
+import {
+  EyeIcon,
+  EyeSlashIcon,
+  UserIcon,
+  BuildingOfficeIcon,
+  CheckCircleIcon,
+} from "@heroicons/react/24/outline";
+
+import { useAuth } from "../context/AuthContext";
+import { easeOutCirc } from "../lib/motion";
+
+const SEEKER_BENEFITS = [
+  "Apply to verified Gujarat jobs in one click",
+  "Real-time alerts for walk-in drives in your city",
+  "Track every application status",
+];
+const RECRUITER_BENEFITS = [
+  "Reach freshers actively looking in your city",
+  "Verified-recruiter badge on every listing",
+  "Built-in shortlisting and applicant tracking",
+];
+
+export default function RegisterPage() {
+  const { register: authRegister } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const defaultRole = searchParams.get('role') || 'jobseeker';
-  const prefillEmail = location.state?.prefillEmail || '';
+  const defaultRole = searchParams.get("role") || "jobseeker";
+  const prefillEmail = location.state?.prefillEmail || "";
 
   const [role, setRole] = useState(defaultRole);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { register, handleSubmit, formState: { errors }, watch } = useForm({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
     defaultValues: { role: defaultRole, email: prefillEmail },
   });
 
@@ -24,197 +55,275 @@ const RegisterPage = () => {
     setIsLoading(true);
     const result = await authRegister({ ...data, role });
     if (result.success) {
-      const dashboardMap = {
-        jobseeker: '/dashboard',
-        recruiter: '/recruiter/dashboard',
+      const map = {
+        jobseeker: "/dashboard",
+        recruiter: "/recruiter/dashboard",
       };
-      navigate(dashboardMap[role] || '/');
+      navigate(map[role] || "/");
     } else {
       setIsLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <div className="px-6 py-4">
-        <Link to="/" className="flex items-center gap-2 w-fit">
-          <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-            <BriefcaseIcon className="h-5 w-5 text-white" />
-          </div>
-          <span className="font-bold text-xl text-gray-900">
-            Gujarat<span className="text-primary-600">Jobs</span>
-          </span>
-        </Link>
-      </div>
+  const benefits = role === "recruiter" ? RECRUITER_BENEFITS : SEEKER_BENEFITS;
 
-      <div className="flex-1 flex items-center justify-center px-4 py-8">
-        <div className="w-full max-w-md">
-          <div className="bg-white rounded-2xl shadow-card p-8">
-            <div className="text-center mb-6">
-              <h1 className="text-2xl font-bold text-gray-900">Create Account</h1>
-              <p className="text-gray-500 mt-1">Join Gujarat's #1 job platform</p>
+  return (
+    <div className="min-h-screen bg-canvas flex flex-col">
+      <header className="px-6 py-5 border-b border-hairline">
+        <Link
+          to="/"
+          className="font-bold text-lg tracking-tight text-ink hover:text-saffron transition-colors"
+        >
+          Gujarat<span className="text-saffron">Jobs</span>
+        </Link>
+      </header>
+
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2">
+        {/* Form column */}
+        <div className="flex items-start lg:items-center justify-center px-6 py-10 lg:py-16 order-2 lg:order-1">
+          <div className="w-full max-w-md">
+            <div className="text-[13px] font-bold tracking-[0.15em] uppercase text-saffron mb-3">
+              Create account
             </div>
+            <h1 className="text-3xl lg:text-4xl font-bold tracking-tighter text-ink leading-[1.1]">
+              Get started in under a minute.
+            </h1>
+            <p className="text-body mt-4">
+              Already have an account?{" "}
+              <Link to="/login" className="text-saffron font-bold hover:underline">
+                Sign in
+              </Link>
+            </p>
 
             {/* Role selector */}
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              <button
-                type="button"
-                onClick={() => setRole('jobseeker')}
-                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                  role === 'jobseeker'
-                    ? 'border-primary-600 bg-primary-50 text-primary-700'
-                    : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                }`}
-              >
-                <UserIcon className="h-7 w-7" />
-                <div>
-                  <p className="font-semibold text-sm">Job Seeker</p>
-                  <p className="text-xs opacity-70">Find jobs</p>
-                </div>
-              </button>
+            <LayoutGroup>
+              <div className="mt-7 grid grid-cols-2 gap-3">
+                <RoleCard
+                  active={role === "jobseeker"}
+                  onClick={() => setRole("jobseeker")}
+                  icon={UserIcon}
+                  title="Job seeker"
+                  subtitle="Find jobs"
+                />
+                <RoleCard
+                  active={role === "recruiter"}
+                  onClick={() => setRole("recruiter")}
+                  icon={BuildingOfficeIcon}
+                  title="Recruiter"
+                  subtitle="Hire talent"
+                />
+              </div>
+            </LayoutGroup>
 
-              <button
-                type="button"
-                onClick={() => setRole('recruiter')}
-                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                  role === 'recruiter'
-                    ? 'border-primary-600 bg-primary-50 text-primary-700'
-                    : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                }`}
-              >
-                <BuildingOfficeIcon className="h-7 w-7" />
-                <div>
-                  <p className="font-semibold text-sm">Recruiter</p>
-                  <p className="text-xs opacity-70">Hire talent</p>
-                </div>
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+            <form onSubmit={handleSubmit(onSubmit)} className="mt-7 space-y-4" noValidate>
+              <Field label="Full name" error={errors.name?.message}>
                 <input
                   type="text"
-                  {...register('name', {
-                    required: 'Name is required',
-                    minLength: { value: 2, message: 'Name must be at least 2 characters' },
+                  {...register("name", {
+                    required: "Name is required",
+                    minLength: { value: 2, message: "Name must be at least 2 characters" },
                   })}
-                  className="input"
                   placeholder="Your full name"
+                  className={inputClass(!!errors.name)}
                 />
-                {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>}
-              </div>
+              </Field>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+              <Field label="Email" error={errors.email?.message}>
                 <input
                   type="email"
-                  {...register('email', {
-                    required: 'Email is required',
-                    pattern: { value: /^\S+@\S+\.\S+$/, message: 'Invalid email' },
+                  {...register("email", {
+                    required: "Email is required",
+                    pattern: { value: /^\S+@\S+\.\S+$/, message: "Enter a valid email" },
                   })}
-                  className="input"
                   placeholder="you@example.com"
+                  className={inputClass(!!errors.email)}
                 />
-                {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
-              </div>
+              </Field>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+              <Field label="Phone" error={errors.phone?.message}>
                 <input
                   type="tel"
-                  {...register('phone', {
-                    pattern: { value: /^[6-9]\d{9}$/, message: 'Invalid phone number (10 digits)' },
+                  {...register("phone", {
+                    pattern: { value: /^[6-9]\d{9}$/, message: "Enter a valid 10-digit number" },
                   })}
-                  className="input"
                   placeholder="9876543210"
+                  className={inputClass(!!errors.phone)}
                 />
-                {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone.message}</p>}
-              </div>
+              </Field>
 
-              {role === 'recruiter' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+              {role === "recruiter" && (
+                <Field label="Company name" error={errors.companyName?.message}>
                   <input
                     type="text"
-                    {...register('companyName', {
-                      required: role === 'recruiter' ? 'Company name is required' : false,
+                    {...register("companyName", {
+                      required: role === "recruiter" ? "Company name is required" : false,
                     })}
-                    className="input"
                     placeholder="Your company name"
+                    className={inputClass(!!errors.companyName)}
                   />
-                  {errors.companyName && <p className="mt-1 text-xs text-red-500">{errors.companyName.message}</p>}
-                </div>
+                </Field>
               )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <Field label="Password" error={errors.password?.message}>
                 <div className="relative">
                   <input
-                    type={showPassword ? 'text' : 'password'}
-                    {...register('password', {
-                      required: 'Password is required',
-                      minLength: { value: 6, message: 'Password must be at least 6 characters' },
+                    type={showPassword ? "text" : "password"}
+                    {...register("password", {
+                      required: "Password is required",
+                      minLength: { value: 6, message: "Password must be at least 6 characters" },
                     })}
-                    className="input pr-10"
                     placeholder="Min 6 characters"
+                    className={inputClass(!!errors.password) + " pr-10"}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-soft hover:text-ink transition-colors"
                   >
-                    {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                    {showPassword ? (
+                      <EyeSlashIcon className="h-5 w-5" />
+                    ) : (
+                      <EyeIcon className="h-5 w-5" />
+                    )}
                   </button>
                 </div>
-                {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
-              </div>
+              </Field>
 
-              <div className="flex items-start gap-2">
+              <div className="flex items-start gap-2.5 pt-2">
                 <input
                   type="checkbox"
                   id="terms"
-                  {...register('terms', { required: 'You must accept the terms' })}
-                  className="mt-0.5 rounded text-primary-600"
+                  {...register("terms", { required: "You must accept the terms" })}
+                  className="mt-1 rounded text-saffron focus:ring-saffron border-hairline-strong"
                 />
-                <label htmlFor="terms" className="text-sm text-gray-600">
-                  I agree to the{' '}
-                  <a href="#" className="text-primary-600 hover:underline">Terms of Service</a>
-                  {' '}and{' '}
-                  <a href="#" className="text-primary-600 hover:underline">Privacy Policy</a>
+                <label htmlFor="terms" className="text-sm text-body">
+                  I agree to the{" "}
+                  <a href="#" className="text-saffron font-bold hover:underline">
+                    Terms
+                  </a>{" "}
+                  and{" "}
+                  <a href="#" className="text-saffron font-bold hover:underline">
+                    Privacy Policy
+                  </a>
                 </label>
               </div>
-              {errors.terms && <p className="text-xs text-red-500">{errors.terms.message}</p>}
+              {errors.terms && (
+                <p className="text-xs text-error" role="alert">
+                  {errors.terms.message}
+                </p>
+              )}
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="btn-primary w-full py-3 text-base"
+                className="w-full bg-saffron text-on-primary uppercase font-bold tracking-[0.05em] text-sm py-3.5 hover:bg-saffron-active active:scale-[0.98] transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
               >
                 {isLoading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-                    Creating account...
-                  </span>
+                  <>
+                    <span className="animate-spin h-4 w-4 border-2 border-on-primary/40 border-t-on-primary rounded-full" />
+                    Creating account
+                  </>
                 ) : (
-                  `Create ${role === 'recruiter' ? 'Recruiter' : 'Job Seeker'} Account`
+                  `Create ${role === "recruiter" ? "recruiter" : "job seeker"} account`
                 )}
               </button>
             </form>
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
-                Already have an account?{' '}
-                <Link to="/login" className="text-primary-600 hover:text-primary-700 font-semibold">
-                  Sign in
-                </Link>
-              </p>
-            </div>
           </div>
+        </div>
+
+        {/* Value-prop column */}
+        <div className="bg-canvas-warm flex items-center justify-center px-6 py-16 order-1 lg:order-2 border-b lg:border-b-0 lg:border-l border-hairline">
+          <motion.div
+            key={role}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, ease: easeOutCirc }}
+            className="max-w-md"
+          >
+            <div className="text-[13px] font-bold tracking-[0.15em] uppercase text-saffron mb-4">
+              {role === "recruiter" ? "For recruiters" : "For freshers"}
+            </div>
+            <h2 className="text-3xl lg:text-4xl font-bold tracking-tighter leading-[1.1] text-ink">
+              {role === "recruiter" ? (
+                <>
+                  Reach the right talent in{" "}
+                  <span className="text-saffron">your city.</span>
+                </>
+              ) : (
+                <>
+                  Stop applying.{" "}
+                  <span className="text-saffron">Start interviewing.</span>
+                </>
+              )}
+            </h2>
+            <p className="text-body mt-6 leading-relaxed">
+              {role === "recruiter"
+                ? "Post your job and reach verified Gujarat candidates within minutes. No noise from other regions, no inflated funnels."
+                : "Walk-in drives in your city, pushed to your phone the moment they go live. Real recruiters. Real interviews."}
+            </p>
+            <ul className="mt-8 space-y-3">
+              {benefits.map((b, i) => (
+                <li key={i} className="flex items-center gap-3 text-sm text-body">
+                  <CheckCircleIcon className="h-5 w-5 text-saffron stroke-[1.5] shrink-0" />
+                  {b}
+                </li>
+              ))}
+            </ul>
+          </motion.div>
         </div>
       </div>
     </div>
   );
-};
+}
 
-export default RegisterPage;
+function RoleCard({ active, onClick, icon: Icon, title, subtitle }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`relative p-5 rounded-xl border-2 transition-colors text-left ${
+        active
+          ? "border-saffron bg-saffron/5"
+          : "border-hairline bg-canvas hover:border-hairline-strong"
+      }`}
+    >
+      {active && (
+        <motion.div
+          layoutId="role-indicator"
+          className="absolute top-3 right-3 w-2 h-2 rounded-full bg-saffron"
+        />
+      )}
+      <Icon
+        className={`h-6 w-6 stroke-[1.5] ${
+          active ? "text-saffron" : "text-muted-soft"
+        }`}
+      />
+      <p className="mt-3 font-bold tracking-tight text-sm text-ink">{title}</p>
+      <p className="text-xs text-muted-text mt-0.5">{subtitle}</p>
+    </button>
+  );
+}
+
+function Field({ label, error, children }) {
+  return (
+    <div>
+      <label className="block text-[13px] font-bold tracking-[0.15em] uppercase text-ink mb-2">
+        {label}
+      </label>
+      {children}
+      {error && (
+        <p className="mt-1.5 text-xs text-error" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function inputClass(hasError) {
+  return `w-full px-3.5 py-3 border rounded-lg text-sm bg-canvas focus:outline-none focus:ring-1 transition-all ${
+    hasError
+      ? "border-error focus:ring-error/30"
+      : "border-hairline focus:border-saffron focus:ring-saffron/30"
+  }`;
+}

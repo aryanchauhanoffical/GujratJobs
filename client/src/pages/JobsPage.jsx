@@ -1,50 +1,63 @@
-import React, { useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
-import { FunnelIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import { useState } from 'react';
-import Navbar from '../components/layout/Navbar';
-import Footer from '../components/layout/Footer';
-import JobList from '../components/jobs/JobList';
-import JobFilters from '../components/jobs/JobFilters';
-import JobSearch from '../components/jobs/JobSearch';
-import useJobStore from '../store/useJobStore';
-import { jobsAPI } from '../api/jobs.api';
+/**
+ * JobsPage — DESIGN.md "Disciplined warmth"
+ *
+ * Browse experience. Cream hero band with title + count + search,
+ * sticky filter sidebar (desktop), bottom-sheet on mobile, BMW-style
+ * pagination with hairline borders.
+ */
+
+import React, { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
+import {
+  FunnelIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
+
+import Navbar from "../components/layout/Navbar";
+import Footer from "../components/layout/Footer";
+import JobList from "../components/jobs/JobList";
+import JobFilters from "../components/jobs/JobFilters";
+import JobSearch from "../components/jobs/JobSearch";
+import useJobStore from "../store/useJobStore";
+import { jobsAPI } from "../api/jobs.api";
 
 const SORT_OPTIONS = [
-  { value: '-createdAt', label: 'Newest First' },
-  { value: 'createdAt', label: 'Oldest First' },
-  { value: '-salary.max', label: 'Highest Salary' },
-  { value: 'salary.min', label: 'Lowest Salary' },
-  { value: '-views', label: 'Most Viewed' },
+  { value: "-createdAt", label: "Newest first" },
+  { value: "createdAt", label: "Oldest first" },
+  { value: "-salary.max", label: "Highest salary" },
+  { value: "salary.min", label: "Lowest salary" },
+  { value: "-views", label: "Most viewed" },
 ];
 
-const JobsPage = () => {
+export default function JobsPage() {
   const [searchParams] = useSearchParams();
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const { filters, setFilters, setFilter, pagination, setPage } = useJobStore();
 
-  // Initialize filters from URL params
   useEffect(() => {
     const urlFilters = {};
-    if (searchParams.get('search')) urlFilters.search = searchParams.get('search');
-    if (searchParams.get('city')) urlFilters.city = searchParams.get('city');
-    if (searchParams.get('category')) urlFilters.category = searchParams.get('category');
-    if (searchParams.get('isWalkIn') === 'true') urlFilters.isWalkIn = true;
+    if (searchParams.get("search")) urlFilters.search = searchParams.get("search");
+    if (searchParams.get("city")) urlFilters.city = searchParams.get("city");
+    if (searchParams.get("category")) urlFilters.category = searchParams.get("category");
+    if (searchParams.get("isWalkIn") === "true") urlFilters.isWalkIn = true;
     if (Object.keys(urlFilters).length > 0) setFilters(urlFilters);
   }, []);
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['jobs', filters, pagination.page],
-    queryFn: () => jobsAPI.getAll({
-      ...filters,
-      isWalkIn: filters.isWalkIn || undefined,
-      isGuaranteedHiring: filters.isGuaranteedHiring || undefined,
-      fastTrack: filters.fastTrack || undefined,
-      isFresherFriendly: filters.isFresherFriendly || undefined,
-      page: pagination.page,
-      limit: pagination.limit,
-    }),
+    queryKey: ["jobs", filters, pagination.page],
+    queryFn: () =>
+      jobsAPI.getAll({
+        ...filters,
+        isWalkIn: filters.isWalkIn || undefined,
+        isGuaranteedHiring: filters.isGuaranteedHiring || undefined,
+        fastTrack: filters.fastTrack || undefined,
+        isFresherFriendly: filters.isFresherFriendly || undefined,
+        page: pagination.page,
+        limit: pagination.limit,
+      }),
     keepPreviousData: true,
   });
 
@@ -53,125 +66,129 @@ const JobsPage = () => {
   const pages = data?.pagination?.pages || 1;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-canvas">
       <Navbar />
 
       <main className="flex-1">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 py-6">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col md:flex-row md:items-center gap-4">
-              <div className="flex-1">
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {filters.city ? `Jobs in ${filters.city}` : 'All Jobs in Gujarat'}
-                </h1>
-                <p className="text-sm text-gray-500 mt-1">
-                  {total.toLocaleString()} jobs found
-                  {filters.search ? ` for "${filters.search}"` : ''}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3">
-                {/* Search */}
-                <JobSearch className="w-64 hidden md:block" />
-
-                {/* Sort */}
-                <select
-                  value={filters.sort}
-                  onChange={(e) => setFilter('sort', e.target.value)}
-                  className="input text-sm w-44"
-                >
-                  {SORT_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-
-                {/* Mobile filter button */}
-                <button
-                  onClick={() => setShowMobileFilters(true)}
-                  className="md:hidden btn-secondary flex items-center gap-2"
-                >
-                  <FunnelIcon className="h-4 w-4" />
-                  Filters
-                </button>
-              </div>
+        {/* Hero header */}
+        <div className="bg-canvas-warm border-b border-hairline py-12 px-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-[13px] font-bold tracking-[0.15em] uppercase text-saffron mb-3">
+              {filters.city ? filters.city : "All Gujarat"}
             </div>
+            <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-ink">
+              {filters.city ? `Jobs in ${filters.city}` : "Find your next job"}
+            </h1>
+            <p className="text-body text-base mt-3">
+              <span className="font-bold text-ink tabular-nums">
+                {total.toLocaleString()}
+              </span>{" "}
+              {total === 1 ? "job" : "jobs"} found
+              {filters.search ? ` for "${filters.search}"` : ""}
+            </p>
 
-            {/* Mobile search */}
-            <div className="mt-4 md:hidden">
-              <JobSearch className="w-full" />
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <JobSearch className="flex-1 min-w-[260px]" />
+              <select
+                value={filters.sort}
+                onChange={(e) => setFilter("sort", e.target.value)}
+                className="px-4 py-3 border border-hairline rounded-lg text-sm bg-canvas focus:outline-none focus:border-saffron focus:ring-1 focus:ring-saffron/30 transition-all min-w-[170px]"
+              >
+                {SORT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={() => setShowMobileFilters(true)}
+                className="md:hidden bg-canvas text-ink border border-hairline-strong rounded-full px-5 h-12 inline-flex items-center gap-2 text-sm font-bold hover:border-ink transition-colors"
+              >
+                <FunnelIcon className="h-4 w-4 stroke-[1.5]" />
+                Filters
+              </button>
             </div>
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex gap-6">
-            {/* Filters sidebar - desktop */}
-            <aside className="hidden md:block w-64 flex-shrink-0">
-              <div className="sticky top-20">
+        <div className="max-w-7xl mx-auto px-6 py-10">
+          <div className="flex gap-8">
+            <aside className="hidden md:block w-72 shrink-0">
+              <div className="sticky top-24">
                 <JobFilters />
               </div>
             </aside>
 
-            {/* Job list */}
-            <main className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0">
               <JobList
                 jobs={jobs}
                 isLoading={isLoading || isFetching}
                 emptyMessage={
                   filters.search
                     ? `No jobs found for "${filters.search}"`
-                    : 'No jobs found with current filters'
+                    : "No jobs found with current filters"
                 }
               />
 
-              {/* Pagination */}
               {pages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-8">
-                  <button
+                <div className="flex items-center justify-center gap-1 mt-12">
+                  <PaginationButton
                     onClick={() => setPage(Math.max(1, pagination.page - 1))}
                     disabled={pagination.page === 1}
-                    className="btn-secondary p-2 disabled:opacity-40"
                   >
-                    <ChevronLeftIcon className="h-5 w-5" />
-                  </button>
-
+                    <ChevronLeftIcon className="h-4 w-4" />
+                  </PaginationButton>
                   {[...Array(Math.min(7, pages))].map((_, i) => {
                     const page = i + 1;
+                    const active = pagination.page === page;
                     return (
                       <button
                         key={page}
                         onClick={() => setPage(page)}
-                        className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
-                          pagination.page === page
-                            ? 'bg-primary-600 text-white'
-                            : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                        className={`w-10 h-10 rounded-full text-sm font-bold tracking-tight transition-colors tabular-nums ${
+                          active
+                            ? "bg-ink text-on-dark"
+                            : "bg-canvas text-ink border border-hairline hover:border-ink"
                         }`}
                       >
                         {page}
                       </button>
                     );
                   })}
-
-                  <button
+                  <PaginationButton
                     onClick={() => setPage(Math.min(pages, pagination.page + 1))}
                     disabled={pagination.page === pages}
-                    className="btn-secondary p-2 disabled:opacity-40"
                   >
-                    <ChevronRightIcon className="h-5 w-5" />
-                  </button>
+                    <ChevronRightIcon className="h-4 w-4" />
+                  </PaginationButton>
                 </div>
               )}
-            </main>
+            </div>
           </div>
         </div>
       </main>
 
-      {/* Mobile filters modal */}
       {showMobileFilters && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
-          <div className="bg-white w-full max-h-[85vh] rounded-t-2xl overflow-y-auto">
-            <div className="p-4">
+        <div
+          className="fixed inset-0 bg-ink/50 z-50 flex items-end"
+          onClick={() => setShowMobileFilters(false)}
+        >
+          <div
+            className="bg-canvas w-full max-h-[85vh] overflow-y-auto rounded-t-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-canvas border-b border-hairline px-5 py-4 flex items-center justify-between">
+              <span className="text-[13px] font-bold tracking-[0.15em] uppercase text-ink">
+                Filters
+              </span>
+              <button
+                onClick={() => setShowMobileFilters(false)}
+                className="text-muted-soft hover:text-ink"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-5">
               <JobFilters onClose={() => setShowMobileFilters(false)} />
             </div>
           </div>
@@ -181,6 +198,16 @@ const JobsPage = () => {
       <Footer />
     </div>
   );
-};
+}
 
-export default JobsPage;
+function PaginationButton({ onClick, disabled, children }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="w-10 h-10 rounded-full bg-canvas text-ink border border-hairline hover:border-ink inline-flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+    >
+      {children}
+    </button>
+  );
+}

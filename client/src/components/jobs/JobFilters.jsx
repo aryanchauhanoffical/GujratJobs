@@ -1,130 +1,101 @@
-import React from 'react';
-import { XMarkIcon, FunnelIcon } from '@heroicons/react/24/outline';
-import useJobStore from '../../store/useJobStore';
-import { GUJARAT_CITIES, JOB_TYPES, EXPERIENCE_LEVELS, JOB_CATEGORIES, SALARY_RANGES } from '../../utils/constants';
+/**
+ * JobFilters — DESIGN.md "Disciplined warmth"
+ *
+ * Sidebar filter panel. BMW-style: 13px uppercase eyebrows, hairline
+ * sections, saffron radio/checkbox accents. No emoji on filter labels.
+ */
 
-const JobFilters = ({ onClose }) => {
-  const { filters, setFilter, setFilters, resetFilters, getActiveFilterCount } = useJobStore();
+import React from "react";
+import { XMarkIcon } from "@heroicons/react/24/outline";
+import useJobStore from "../../store/useJobStore";
+import {
+  GUJARAT_CITIES,
+  JOB_TYPES,
+  EXPERIENCE_LEVELS,
+  JOB_CATEGORIES,
+  SALARY_RANGES,
+} from "../../utils/constants";
+
+export default function JobFilters({ onClose }) {
+  const { filters, setFilter, setFilters, resetFilters, getActiveFilterCount } =
+    useJobStore();
   const activeCount = getActiveFilterCount();
 
   const handleSalaryRange = (range) => {
-    setFilters({ minSalary: range.min || '', maxSalary: range.max || '' });
+    setFilters({ minSalary: range.min || "", maxSalary: range.max || "" });
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5">
+    <div className="bg-canvas border border-hairline rounded-xl p-6">
+      <div className="flex items-center justify-between mb-6 pb-4 border-b border-hairline">
         <div className="flex items-center gap-2">
-          <FunnelIcon className="h-5 w-5 text-gray-600" />
-          <span className="font-semibold text-gray-900">Filters</span>
+          <span className="text-[13px] font-bold tracking-[0.15em] uppercase text-ink">
+            Filters
+          </span>
           {activeCount > 0 && (
-            <span className="bg-primary-600 text-white text-xs px-2 py-0.5 rounded-full">
+            <span className="bg-saffron text-on-primary text-[10px] font-bold px-2 py-0.5 rounded-full">
               {activeCount}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {activeCount > 0 && (
             <button
               onClick={resetFilters}
-              className="text-xs text-red-500 hover:text-red-600 font-medium"
+              className="text-xs uppercase tracking-wider font-bold text-error hover:text-error/80"
             >
               Clear all
             </button>
           )}
           {onClose && (
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <button
+              onClick={onClose}
+              className="text-muted-soft hover:text-ink transition-colors"
+            >
               <XMarkIcon className="h-5 w-5" />
             </button>
           )}
         </div>
       </div>
 
-      <div className="space-y-5">
-        {/* City */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+      <div className="space-y-7">
+        <FilterSection label="City">
           <select
             value={filters.city}
-            onChange={(e) => setFilter('city', e.target.value)}
-            className="input text-sm"
+            onChange={(e) => setFilter("city", e.target.value)}
+            className="w-full px-3 py-2 border border-hairline rounded-lg text-sm bg-canvas focus:outline-none focus:border-saffron transition-colors"
           >
-            <option value="">All Gujarat Cities</option>
+            <option value="">All Gujarat cities</option>
             {GUJARAT_CITIES.map((city) => (
-              <option key={city} value={city}>{city}</option>
+              <option key={city} value={city}>
+                {city}
+              </option>
             ))}
           </select>
-        </div>
+        </FilterSection>
 
-        {/* Job Type */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Job Type</label>
-          <div className="space-y-2">
-            {JOB_TYPES.map((t) => (
-              <label key={t.value} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="jobType"
-                  value={t.value}
-                  checked={filters.type === t.value}
-                  onChange={(e) => setFilter('type', e.target.value)}
-                  className="text-primary-600 focus:ring-primary-500"
-                />
-                <span className="text-sm text-gray-700">{t.label}</span>
-              </label>
-            ))}
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="jobType"
-                value=""
-                checked={filters.type === ''}
-                onChange={() => setFilter('type', '')}
-                className="text-primary-600 focus:ring-primary-500"
-              />
-              <span className="text-sm text-gray-700">All Types</span>
-            </label>
-          </div>
-        </div>
+        <FilterSection label="Job type">
+          <RadioGroup
+            name="jobType"
+            value={filters.type}
+            onChange={(v) => setFilter("type", v)}
+            options={[{ value: "", label: "All types" }, ...JOB_TYPES]}
+          />
+        </FilterSection>
 
-        {/* Experience Level */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Experience Level</label>
-          <div className="space-y-2">
-            {EXPERIENCE_LEVELS.map((level) => (
-              <label key={level.value} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="expLevel"
-                  value={level.value}
-                  checked={filters.experienceLevel === level.value}
-                  onChange={(e) => setFilter('experienceLevel', e.target.value)}
-                  className="text-primary-600 focus:ring-primary-500"
-                />
-                <span className="text-sm text-gray-700">{level.label}</span>
-              </label>
-            ))}
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="expLevel"
-                value=""
-                checked={filters.experienceLevel === ''}
-                onChange={() => setFilter('experienceLevel', '')}
-                className="text-primary-600 focus:ring-primary-500"
-              />
-              <span className="text-sm text-gray-700">All Levels</span>
-            </label>
-          </div>
-        </div>
+        <FilterSection label="Experience">
+          <RadioGroup
+            name="expLevel"
+            value={filters.experienceLevel}
+            onChange={(v) => setFilter("experienceLevel", v)}
+            options={[{ value: "", label: "All levels" }, ...EXPERIENCE_LEVELS]}
+          />
+        </FilterSection>
 
-        {/* Salary Range */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Salary Range</label>
-          <div className="space-y-2">
+        <FilterSection label="Salary range">
+          <div className="space-y-2.5">
             {SALARY_RANGES.map((range, idx) => (
-              <label key={idx} className="flex items-center gap-2 cursor-pointer">
+              <label key={idx} className="flex items-center gap-2.5 cursor-pointer">
                 <input
                   type="radio"
                   name="salary"
@@ -133,56 +104,81 @@ const JobFilters = ({ onClose }) => {
                     parseInt(filters.maxSalary || 0) === range.max
                   }
                   onChange={() => handleSalaryRange(range)}
-                  className="text-primary-600 focus:ring-primary-500"
+                  className="text-saffron focus:ring-saffron border-hairline-strong"
                 />
-                <span className="text-sm text-gray-700">{range.label}</span>
+                <span className="text-sm text-body">{range.label}</span>
               </label>
             ))}
           </div>
-        </div>
+        </FilterSection>
 
-        {/* Special Filters */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Special</label>
-          <div className="space-y-2">
+        <FilterSection label="Special">
+          <div className="space-y-2.5">
             {[
-              { key: 'isWalkIn', label: '📅 Walk-in Jobs Only' },
-              { key: 'isGuaranteedHiring', label: '✅ Guaranteed Hiring' },
-              { key: 'fastTrack', label: '⚡ Fast Track' },
-              { key: 'isFresherFriendly', label: '🌱 Fresher Friendly' },
+              { key: "isWalkIn", label: "Walk-in jobs only" },
+              { key: "isGuaranteedHiring", label: "Guaranteed hiring" },
+              { key: "fastTrack", label: "Fast track" },
+              { key: "isFresherFriendly", label: "Fresher friendly" },
             ].map(({ key, label }) => (
-              <label key={key} className="flex items-center gap-2 cursor-pointer">
+              <label key={key} className="flex items-center gap-2.5 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={!!filters[key]}
                   onChange={(e) => setFilter(key, e.target.checked)}
-                  className="rounded text-primary-600 focus:ring-primary-500"
+                  className="rounded text-saffron focus:ring-saffron border-hairline-strong"
                 />
-                <span className="text-sm text-gray-700">{label}</span>
+                <span className="text-sm text-body">{label}</span>
               </label>
             ))}
           </div>
-        </div>
+        </FilterSection>
 
-        {/* Category */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+        <FilterSection label="Category">
           <select
             value={filters.category}
-            onChange={(e) => setFilter('category', e.target.value)}
-            className="input text-sm"
+            onChange={(e) => setFilter("category", e.target.value)}
+            className="w-full px-3 py-2 border border-hairline rounded-lg text-sm bg-canvas focus:outline-none focus:border-saffron transition-colors"
           >
-            <option value="">All Categories</option>
+            <option value="">All categories</option>
             {JOB_CATEGORIES.map((cat) => (
               <option key={cat.value} value={cat.value}>
-                {cat.icon} {cat.label}
+                {cat.label}
               </option>
             ))}
           </select>
-        </div>
+        </FilterSection>
       </div>
     </div>
   );
-};
+}
 
-export default JobFilters;
+function FilterSection({ label, children }) {
+  return (
+    <div>
+      <label className="block text-[13px] font-bold tracking-[0.15em] uppercase text-ink mb-3">
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function RadioGroup({ name, value, onChange, options }) {
+  return (
+    <div className="space-y-2.5">
+      {options.map((opt) => (
+        <label key={opt.value} className="flex items-center gap-2.5 cursor-pointer">
+          <input
+            type="radio"
+            name={name}
+            value={opt.value}
+            checked={value === opt.value}
+            onChange={(e) => onChange(e.target.value)}
+            className="text-saffron focus:ring-saffron border-hairline-strong"
+          />
+          <span className="text-sm text-body">{opt.label}</span>
+        </label>
+      ))}
+    </div>
+  );
+}

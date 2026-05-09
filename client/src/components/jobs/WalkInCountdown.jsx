@@ -1,14 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+/**
+ * WalkInCountdown — DESIGN.md "Disciplined warmth"
+ *
+ * Live HH:MM:SS countdown to end of walk-in day. Marigold (urgency)
+ * coloring, tabular numbers, animated digit flips on tick.
+ */
+
+import React, { useState, useEffect } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
 const Digit = ({ value }) => (
   <AnimatePresence mode="popLayout" initial={false}>
     <motion.span
       key={value}
-      initial={{ y: -12, opacity: 0 }}
+      initial={{ y: -10, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      exit={{ y: 12, opacity: 0 }}
-      transition={{ duration: 0.18, ease: 'easeOut' }}
+      exit={{ y: 10, opacity: 0 }}
+      transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
       className="inline-block tabular-nums"
     >
       {value}
@@ -16,20 +23,19 @@ const Digit = ({ value }) => (
   </AnimatePresence>
 );
 
-const pad = (n) => String(n).padStart(2, '0');
+const pad = (n) => String(n).padStart(2, "0");
 
-const WalkInCountdown = ({ targetDate }) => {
+export default function WalkInCountdown({ targetDate }) {
   const [timeLeft, setTimeLeft] = useState(null);
 
   useEffect(() => {
     const compute = () => {
-      // Count down to end-of-day of the walk-in date
       const target = new Date(targetDate);
       target.setHours(23, 59, 59, 999);
       const diff = target - Date.now();
 
       if (diff <= 0) {
-        setTimeLeft(null); // triggers "Drive in progress"
+        setTimeLeft(null);
         return;
       }
 
@@ -46,28 +52,28 @@ const WalkInCountdown = ({ targetDate }) => {
 
   if (!timeLeft) {
     return (
-      <span className="text-xs font-bold text-rose-600 bg-rose-50 px-2 py-1 rounded-md">
+      <span className="text-[11px] font-bold text-marigold uppercase tracking-[0.15em]">
         Drive in progress
       </span>
     );
   }
 
   return (
-    <div className="flex items-center gap-1 text-rose-600 font-mono text-xs font-bold">
-      <span className="bg-rose-50 px-1.5 py-0.5 rounded">
+    <div className="flex items-center gap-1.5 text-marigold font-mono text-xs font-bold">
+      <span className="bg-marigold/10 px-2 py-1 rounded-md">
         <Digit value={timeLeft.h} />
       </span>
-      <span className="opacity-60">:</span>
-      <span className="bg-rose-50 px-1.5 py-0.5 rounded">
+      <span className="opacity-50">:</span>
+      <span className="bg-marigold/10 px-2 py-1 rounded-md">
         <Digit value={timeLeft.m} />
       </span>
-      <span className="opacity-60">:</span>
-      <span className="bg-rose-50 px-1.5 py-0.5 rounded">
+      <span className="opacity-50">:</span>
+      <span className="bg-marigold/10 px-2 py-1 rounded-md">
         <Digit value={timeLeft.s} />
       </span>
-      <span className="text-rose-400 font-normal ml-1">left today</span>
+      <span className="text-muted-text font-normal ml-1.5 text-[11px] uppercase tracking-wider">
+        left
+      </span>
     </div>
   );
-};
-
-export default WalkInCountdown;
+}

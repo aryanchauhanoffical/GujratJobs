@@ -1,195 +1,219 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+/**
+ * JobCard — DESIGN.md "Disciplined warmth"
+ *
+ * The most reused card in the app. 12px radius, hairline border,
+ * whisper-of-lift hover, sharp 0px primary CTA on apply, no gradients,
+ * no emoji, two-weight typography only.
+ */
+
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
   MapPinIcon,
   ClockIcon,
   CurrencyRupeeIcon,
   BuildingOfficeIcon,
-  BoltIcon,
-  StarIcon,
+  CalendarIcon,
   ArrowRightIcon,
-} from '@heroicons/react/24/outline';
-import { CheckBadgeIcon } from '@heroicons/react/24/solid';
-import { formatSalary, timeAgo, getJobTypeLabel, getExpLevelLabel, truncate } from '../../utils/helpers';
-import ApplyModal from './ApplyModal';
-import { useAuth } from '../../context/AuthContext';
-import { formatDate } from '../../utils/helpers';
+  CheckBadgeIcon,
+} from "@heroicons/react/24/outline";
 
-const JobCard = ({ job, compact = false }) => {
+import {
+  formatSalary,
+  timeAgo,
+  getJobTypeLabel,
+  getExpLevelLabel,
+  formatDate,
+} from "../../utils/helpers";
+import { useAuth } from "../../context/AuthContext";
+import { Badge } from "@/components/ui/badge";
+import ApplyModal from "./ApplyModal";
+import { D_HOVER, easeOutQuart } from "../../lib/motion";
+
+export default function JobCard({ job, compact = false }) {
   const { user, isAuthenticated } = useAuth();
   const [showApplyModal, setShowApplyModal] = useState(false);
 
   const {
-    _id, title, company, companyLogo, location, salary, type, experienceLevel,
-    isWalkIn, walkInDetails, isGuaranteedHiring, fastTrack, isFresherFriendly,
-    applicantCount = 0, createdAt, tags = [], source, skills = [],
+    _id,
+    title,
+    company,
+    companyLogo,
+    location,
+    salary,
+    type,
+    experienceLevel,
+    isWalkIn,
+    walkInDetails,
+    isGuaranteedHiring,
+    fastTrack,
+    isFresherFriendly,
+    applicantCount = 0,
+    createdAt,
+    source,
+    skills = [],
   } = job;
 
   const hasHighResponse = applicantCount < 10;
 
   return (
     <>
-      <div className="bg-white rounded-xl border border-gray-200 hover:border-primary-200 hover:shadow-card-hover transition-all duration-300 overflow-hidden group">
-        {/* Walk-in highlight bar */}
+      <motion.div
+        whileHover={{ y: -2 }}
+        transition={{ duration: D_HOVER, ease: easeOutQuart }}
+        className={`bg-canvas rounded-xl border ${
+          isWalkIn ? "border-l-4 border-l-saffron border-hairline" : "border-hairline"
+        } hover:border-ink hover:shadow-card transition-all duration-200 overflow-hidden`}
+      >
         {isWalkIn && (
-          <div className="bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-1.5">
-            <p className="text-white text-xs font-semibold flex items-center gap-1.5">
-              <CalendarIcon className="h-3.5 w-3.5" />
-              Walk-in Interview{walkInDetails?.date ? ` on ${formatDate(walkInDetails.date, 'dd MMM')}` : ''}
-              {walkInDetails?.startTime && ` at ${walkInDetails.startTime}`}
+          <div className="bg-saffron px-5 py-2 flex items-center gap-2">
+            <CalendarIcon className="h-4 w-4 text-on-primary stroke-[2]" />
+            <p className="text-on-primary text-xs font-bold tracking-wide uppercase">
+              Walk-in
+              {walkInDetails?.date && ` · ${formatDate(walkInDetails.date, "dd MMM")}`}
+              {walkInDetails?.startTime && ` · ${walkInDetails.startTime}`}
             </p>
           </div>
         )}
 
-        <div className="p-5">
-          {/* Header */}
-          <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="p-6">
+          <div className="flex items-start justify-between gap-3 mb-4">
             <div className="flex items-start gap-3 flex-1 min-w-0">
-              {/* Company logo */}
-              <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 border border-gray-200 overflow-hidden">
+              <div className="w-12 h-12 rounded-lg bg-surface-soft flex items-center justify-center shrink-0 border border-hairline overflow-hidden">
                 {companyLogo ? (
                   <img src={companyLogo} alt={company} className="w-full h-full object-cover" />
                 ) : (
-                  <BuildingOfficeIcon className="h-6 w-6 text-gray-400" />
+                  <BuildingOfficeIcon className="h-6 w-6 text-muted-soft stroke-[1.5]" />
                 )}
               </div>
-
               <div className="min-w-0 flex-1">
                 <Link
                   to={`/jobs/${_id}`}
-                  className="font-semibold text-gray-900 hover:text-primary-600 transition-colors line-clamp-1 group-hover:text-primary-600"
+                  className="font-bold text-base tracking-tight text-ink hover:text-saffron transition-colors line-clamp-1"
                 >
                   {title}
                 </Link>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-sm text-gray-600 truncate">{company}</span>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className="text-sm text-body truncate">{company}</span>
                   {isGuaranteedHiring && (
-                    <CheckBadgeIcon className="h-4 w-4 text-green-500 flex-shrink-0" title="Verified Company" />
+                    <CheckBadgeIcon
+                      className="h-4 w-4 text-success shrink-0"
+                      title="Verified company"
+                    />
                   )}
                 </div>
               </div>
             </div>
-
-            {/* Time */}
-            <span className="text-xs text-gray-400 flex-shrink-0 flex items-center gap-1">
+            <span className="text-xs text-muted-soft shrink-0 inline-flex items-center gap-1">
               <ClockIcon className="h-3.5 w-3.5" />
               {timeAgo(createdAt)}
             </span>
           </div>
 
-          {/* Tags/Badges */}
-          <div className="flex flex-wrap gap-1.5 mb-3">
-            {isWalkIn && (
-              <span className="badge-orange">
-                📅 Walk-in
-              </span>
-            )}
-            {isGuaranteedHiring && (
-              <span className="badge-green">
-                ✅ Guaranteed Hiring
-              </span>
-            )}
-            {fastTrack && (
-              <span className="badge-blue">
-                ⚡ Fast Track
-              </span>
-            )}
-            {isFresherFriendly && (
-              <span className="badge-purple">
-                🌱 Fresher Friendly
-              </span>
-            )}
-            {source === 'scraped' && (
-              <span className="badge badge-gray">
-                External
-              </span>
-            )}
-          </div>
+          {/* Tags row */}
+          {(isGuaranteedHiring || fastTrack || isFresherFriendly || source === "scraped") && (
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {isGuaranteedHiring && (
+                <Badge className="bg-success/10 text-success border-success/20 rounded-full text-[11px] uppercase font-bold tracking-wider">
+                  Guaranteed
+                </Badge>
+              )}
+              {fastTrack && (
+                <Badge className="bg-marigold/10 text-marigold border-marigold/30 rounded-full text-[11px] uppercase font-bold tracking-wider">
+                  Fast track
+                </Badge>
+              )}
+              {isFresherFriendly && (
+                <Badge className="bg-saffron/10 text-saffron border-saffron/20 rounded-full text-[11px] uppercase font-bold tracking-wider">
+                  Fresher friendly
+                </Badge>
+              )}
+              {source === "scraped" && (
+                <Badge className="bg-surface-soft text-muted-text border-hairline rounded-full text-[11px] uppercase font-bold tracking-wider">
+                  External
+                </Badge>
+              )}
+            </div>
+          )}
 
           {/* Details */}
-          <div className="space-y-1.5 mb-4">
-            <div className="flex items-center gap-4 text-sm text-gray-600">
-              <span className="flex items-center gap-1">
-                <MapPinIcon className="h-4 w-4 text-gray-400" />
-                {location?.city}, {location?.state || 'Gujarat'}
+          <div className="space-y-2 mb-4">
+            <div className="flex items-center gap-4 text-sm text-body">
+              <span className="inline-flex items-center gap-1.5">
+                <MapPinIcon className="h-4 w-4 text-muted-soft stroke-[1.5]" />
+                {location?.city}, {location?.state || "Gujarat"}
               </span>
-              <span className="flex items-center gap-1">
-                <CurrencyRupeeIcon className="h-4 w-4 text-gray-400" />
+              <span className="inline-flex items-center gap-1.5">
+                <CurrencyRupeeIcon className="h-4 w-4 text-muted-soft stroke-[1.5]" />
                 {formatSalary(salary)}
               </span>
             </div>
 
-            <div className="flex items-center gap-3 text-xs">
-              <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md font-medium">
+            <div className="flex items-center gap-2 text-xs">
+              <span className="bg-surface-soft text-muted-text px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">
                 {getJobTypeLabel(type)}
               </span>
-              <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md font-medium capitalize">
+              <span className="bg-surface-soft text-muted-text px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">
                 {getExpLevelLabel(experienceLevel)}
               </span>
             </div>
           </div>
 
-          {/* Skills */}
           {skills.length > 0 && !compact && (
             <div className="flex flex-wrap gap-1 mb-4">
               {skills.slice(0, 4).map((skill, idx) => (
-                <span key={idx} className="text-xs text-primary-700 bg-primary-50 px-2 py-0.5 rounded-md">
+                <span
+                  key={idx}
+                  className="text-xs text-body bg-canvas-warm border border-hairline px-2 py-0.5 rounded-md"
+                >
                   {skill}
                 </span>
               ))}
               {skills.length > 4 && (
-                <span className="text-xs text-gray-500">+{skills.length - 4} more</span>
+                <span className="text-xs text-muted-soft self-center">
+                  +{skills.length - 4} more
+                </span>
               )}
             </div>
           )}
 
           {/* Footer */}
-          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              {hasHighResponse && (
-                <span className="flex items-center gap-1 text-green-600 font-medium">
-                  <StarIcon className="h-3.5 w-3.5" />
-                  High Response Chance
+          <div className="flex items-center justify-between pt-4 border-t border-hairline">
+            <div className="text-xs text-muted-text">
+              {hasHighResponse ? (
+                <span className="font-bold text-success uppercase tracking-wider">
+                  High response chance
                 </span>
-              )}
-              {!hasHighResponse && (
+              ) : (
                 <span>{applicantCount} applicants</span>
               )}
             </div>
 
-            {isAuthenticated && user?.role === 'jobseeker' ? (
+            {isAuthenticated && user?.role === "jobseeker" ? (
               <button
                 onClick={() => setShowApplyModal(true)}
-                className="flex items-center gap-1.5 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                className="bg-saffron text-on-primary uppercase font-bold tracking-[0.05em] text-xs px-5 h-9 inline-flex items-center gap-2 hover:bg-saffron-active active:scale-[0.98] transition-colors duration-150"
               >
-                Apply Now
-                <ArrowRightIcon className="h-4 w-4" />
+                Apply
+                <ArrowRightIcon className="h-3.5 w-3.5" />
               </button>
             ) : (
               <Link
                 to={`/jobs/${_id}`}
-                className="flex items-center gap-1.5 text-primary-600 hover:text-primary-700 text-sm font-medium"
+                className="text-ink hover:text-saffron text-sm font-bold tracking-tight inline-flex items-center gap-1.5 transition-colors"
               >
-                View Details
+                View details
                 <ArrowRightIcon className="h-4 w-4" />
               </Link>
             )}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {showApplyModal && (
         <ApplyModal job={job} onClose={() => setShowApplyModal(false)} />
       )}
     </>
   );
-};
-
-// Needed for walk-in bar
-const CalendarIcon = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
-    <path fillRule="evenodd" d="M6.75 2.25A.75.75 0 017.5 3v1.5h9V3A.75.75 0 0118 3v1.5h.75a3 3 0 013 3v11.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V7.5a3 3 0 013-3H6V3a.75.75 0 01.75-.75zm13.5 9a1.5 1.5 0 00-1.5-1.5H5.25a1.5 1.5 0 00-1.5 1.5v7.5a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5v-7.5z" clipRule="evenodd" />
-  </svg>
-);
-
-export default JobCard;
+}
