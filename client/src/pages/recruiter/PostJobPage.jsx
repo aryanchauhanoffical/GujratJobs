@@ -1,50 +1,81 @@
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { useMutation } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
-import Navbar from '../../components/layout/Navbar';
-import Sidebar from '../../components/layout/Sidebar';
-import LoadingSpinner from '../../components/layout/LoadingSpinner';
-import { jobsAPI } from '../../api/jobs.api';
-import { GUJARAT_CITIES, JOB_TYPES, EXPERIENCE_LEVELS, JOB_CATEGORIES, QUALIFICATIONS } from '../../utils/constants';
+/**
+ * PostJobPage — DESIGN.md "Disciplined warmth"
+ *
+ * Multi-step job creation: Basic / Details / Walk-in / Extras.
+ * Saffron progress indicator, hairline forms, sharp Submit at the end.
+ */
 
-const PostJobPage = () => {
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { useMutation } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { motion, LayoutGroup } from "framer-motion";
+import toast from "react-hot-toast";
+import {
+  XMarkIcon,
+  PaperAirplaneIcon,
+  ArrowRightIcon,
+  ArrowLeftIcon,
+  CheckCircleIcon,
+} from "@heroicons/react/24/outline";
+
+import Navbar from "../../components/layout/Navbar";
+import Sidebar from "../../components/layout/Sidebar";
+import LoadingSpinner from "../../components/layout/LoadingSpinner";
+import { jobsAPI } from "../../api/jobs.api";
+import {
+  GUJARAT_CITIES,
+  JOB_TYPES,
+  EXPERIENCE_LEVELS,
+  JOB_CATEGORIES,
+  QUALIFICATIONS,
+} from "../../utils/constants";
+
+const SECTIONS = [
+  { id: "basic", label: "Basics" },
+  { id: "details", label: "Details" },
+  { id: "walkin", label: "Walk-in" },
+  { id: "extras", label: "Extras" },
+];
+
+export default function PostJobPage() {
   const navigate = useNavigate();
-  const [skillInput, setSkillInput] = useState('');
+  const [skillInput, setSkillInput] = useState("");
   const [skills, setSkills] = useState([]);
-  const [requirements, setRequirements] = useState(['']);
-  const [benefits, setBenefits] = useState(['']);
+  const [requirements, setRequirements] = useState([""]);
+  const [benefits, setBenefits] = useState([""]);
   const [isWalkIn, setIsWalkIn] = useState(false);
   const [isGuaranteedHiring, setIsGuaranteedHiring] = useState(false);
   const [fastTrack, setFastTrack] = useState(false);
   const [isFresherFriendly, setIsFresherFriendly] = useState(false);
-  const [activeSection, setActiveSection] = useState('basic');
+  const [activeSection, setActiveSection] = useState("basic");
 
-  const { register, handleSubmit, formState: { errors }, watch } = useForm({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
     defaultValues: {
-      type: 'full-time',
-      experienceLevel: 'fresher',
-      qualification: 'Any',
-      'salary.currency': 'INR',
-      'salary.period': 'monthly',
+      type: "full-time",
+      experienceLevel: "fresher",
+      qualification: "Any",
       openings: 1,
     },
   });
 
   const createJobMutation = useMutation({
     mutationFn: jobsAPI.create,
-    onSuccess: (data) => {
-      toast.success('Job posted successfully!');
-      navigate('/recruiter/jobs');
+    onSuccess: () => {
+      toast.success("Job posted");
+      navigate("/recruiter/jobs");
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || 'Failed to post job');
+      toast.error(err.response?.data?.message || "Failed to post job");
     },
   });
 
   const onSubmit = (data) => {
-    const jobData = {
+    createJobMutation.mutate({
       ...data,
       skills,
       requirements: requirements.filter(Boolean),
@@ -56,386 +87,511 @@ const PostJobPage = () => {
       salary: {
         min: parseInt(data.salaryMin) || 0,
         max: parseInt(data.salaryMax) || 0,
-        currency: 'INR',
-        period: data.salaryPeriod || 'monthly',
+        currency: "INR",
+        period: "monthly",
         isNegotiable: data.salaryNegotiable || false,
       },
       location: {
         city: data.city,
-        state: 'Gujarat',
+        state: "Gujarat",
         pincode: data.pincode,
         address: data.address,
       },
-    };
-
-    createJobMutation.mutate(jobData);
+    });
   };
 
-  const addRequirement = () => setRequirements([...requirements, '']);
-  const removeRequirement = (idx) => setRequirements(requirements.filter((_, i) => i !== idx));
-  const updateRequirement = (idx, val) => setRequirements(requirements.map((r, i) => i === idx ? val : r));
-
-  const addBenefit = () => setBenefits([...benefits, '']);
-  const removeBenefit = (idx) => setBenefits(benefits.filter((_, i) => i !== idx));
-  const updateBenefit = (idx, val) => setBenefits(benefits.map((b, i) => i === idx ? val : b));
-
-  const sections = [
-    { id: 'basic', label: 'Basic Info' },
-    { id: 'details', label: 'Details' },
-    { id: 'walkin', label: 'Walk-in' },
-    { id: 'extras', label: 'Extras' },
-  ];
+  const goNext = (next) => setActiveSection(next);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-canvas">
       <Navbar />
       <div className="flex flex-1">
         <Sidebar />
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-6 lg:p-10 bg-canvas-warm">
           <div className="max-w-3xl">
-            <h1 className="text-2xl font-bold text-gray-900 mb-6">Post a New Job</h1>
-
-            {/* Section tabs */}
-            <div className="flex gap-1 bg-gray-100 p-1 rounded-xl mb-6">
-              {sections.map(({ id, label }) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setActiveSection(id)}
-                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
-                    activeSection === id ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
+            <div className="text-[13px] font-bold tracking-[0.15em] uppercase text-saffron mb-3">
+              New job
             </div>
+            <h1 className="text-3xl lg:text-4xl font-bold tracking-tighter text-ink leading-tight mb-8">
+              Post a job.
+            </h1>
+
+            {/* Progress tabs */}
+            <LayoutGroup>
+              <div className="flex gap-1 border-b border-hairline mb-6">
+                {SECTIONS.map(({ id, label }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setActiveSection(id)}
+                    className={`relative px-5 py-3 text-sm font-bold tracking-tight transition-colors ${
+                      activeSection === id ? "text-saffron" : "text-muted-text hover:text-ink"
+                    }`}
+                  >
+                    {label}
+                    {activeSection === id && (
+                      <motion.div
+                        layoutId="post-tab-indicator"
+                        className="absolute left-0 right-0 -bottom-px h-[2px] bg-saffron"
+                      />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </LayoutGroup>
 
             <form onSubmit={handleSubmit(onSubmit)}>
-              {/* Basic Info */}
-              {activeSection === 'basic' && (
-                <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
-                  <h2 className="font-semibold text-gray-900">Basic Information</h2>
+              <div className="bg-canvas border border-hairline rounded-xl p-6 space-y-5">
+                {activeSection === "basic" && (
+                  <>
+                    <Field label="Job title" error={errors.title?.message} required>
+                      <input
+                        {...register("title", { required: "Job title is required" })}
+                        placeholder="e.g. Software Developer, Sales Executive"
+                        className={inputClass(!!errors.title)}
+                      />
+                    </Field>
+                    <Field label="Company name" error={errors.company?.message} required>
+                      <input
+                        {...register("company", { required: "Company name is required" })}
+                        placeholder="Your company name"
+                        className={inputClass(!!errors.company)}
+                      />
+                    </Field>
+                    <Field label="Job description" error={errors.description?.message} required>
+                      <textarea
+                        {...register("description", {
+                          required: "Description is required",
+                          minLength: { value: 50, message: "Description must be at least 50 characters" },
+                        })}
+                        rows={6}
+                        placeholder="Describe the role, responsibilities, and what you're looking for..."
+                        className={inputClass(!!errors.description) + " resize-none"}
+                      />
+                    </Field>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <Field label="Category">
+                        <select {...register("category")} className={inputClass(false)}>
+                          <option value="">Select category</option>
+                          {JOB_CATEGORIES.map((c) => (
+                            <option key={c.value} value={c.value}>{c.label}</option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="Job type" required>
+                        <select {...register("type", { required: true })} className={inputClass(false)}>
+                          {JOB_TYPES.map((t) => (
+                            <option key={t.value} value={t.value}>{t.label}</option>
+                          ))}
+                        </select>
+                      </Field>
+                    </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Job Title *</label>
-                    <input
-                      {...register('title', { required: 'Job title is required' })}
-                      className="input"
-                      placeholder="e.g. Software Developer, Sales Executive"
-                    />
-                    {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title.message}</p>}
-                  </div>
+                    <NavRow>
+                      <span />
+                      <NextButton onClick={() => goNext("details")}>Continue</NextButton>
+                    </NavRow>
+                  </>
+                )}
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Company Name *</label>
-                    <input
-                      {...register('company', { required: 'Company name is required' })}
-                      className="input"
-                      placeholder="Your company name"
-                    />
-                    {errors.company && <p className="text-xs text-red-500 mt-1">{errors.company.message}</p>}
-                  </div>
+                {activeSection === "details" && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <Field label="City" error={errors.city?.message} required>
+                        <select
+                          {...register("city", { required: "City is required" })}
+                          className={inputClass(!!errors.city)}
+                        >
+                          <option value="">Select city</option>
+                          {GUJARAT_CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </Field>
+                      <Field label="Pincode">
+                        <input {...register("pincode")} placeholder="380001" className={inputClass(false)} />
+                      </Field>
+                    </div>
+                    <Field label="Office address">
+                      <input {...register("address")} placeholder="Full office address" className={inputClass(false)} />
+                    </Field>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <Field label="Min salary (monthly)">
+                        <SalaryInput register={register("salaryMin")} placeholder="10000" />
+                      </Field>
+                      <Field label="Max salary (monthly)">
+                        <SalaryInput register={register("salaryMax")} placeholder="30000" />
+                      </Field>
+                    </div>
+                    <label className="inline-flex items-center gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        {...register("salaryNegotiable")}
+                        className="rounded text-saffron focus:ring-saffron border-hairline-strong"
+                      />
+                      <span className="text-sm text-body">Salary is negotiable</span>
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <Field label="Experience level" required>
+                        <select {...register("experienceLevel")} className={inputClass(false)}>
+                          {EXPERIENCE_LEVELS.map((l) => (
+                            <option key={l.value} value={l.value}>{l.label}</option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="Qualification">
+                        <select {...register("qualification")} className={inputClass(false)}>
+                          {QUALIFICATIONS.map((q) => <option key={q.value} value={q.value}>{q.label}</option>)}
+                        </select>
+                      </Field>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <Field label="Openings">
+                        <input type="number" {...register("openings")} min="1" placeholder="1" className={inputClass(false)} />
+                      </Field>
+                      <Field label="Application deadline">
+                        <input type="date" {...register("deadline")} className={inputClass(false)} />
+                      </Field>
+                    </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Job Description *</label>
-                    <textarea
-                      {...register('description', { required: 'Description is required', minLength: { value: 50, message: 'Description must be at least 50 characters' } })}
-                      rows={6}
-                      className="input resize-none"
-                      placeholder="Describe the role, responsibilities, and what you're looking for..."
-                    />
-                    {errors.description && <p className="text-xs text-red-500 mt-1">{errors.description.message}</p>}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                      <select {...register('category')} className="input">
-                        <option value="">Select category</option>
-                        {JOB_CATEGORIES.map((c) => (
-                          <option key={c.value} value={c.value}>{c.icon} {c.label}</option>
+                    {/* Skills */}
+                    <Field label="Required skills">
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {skills.map((s) => (
+                          <span
+                            key={s}
+                            className="bg-canvas-warm border border-hairline text-ink px-2.5 py-1 rounded-md text-sm font-bold tracking-tight inline-flex items-center gap-1.5"
+                          >
+                            {s}
+                            <button
+                              type="button"
+                              onClick={() => setSkills(skills.filter((sk) => sk !== s))}
+                              className="text-muted-soft hover:text-error"
+                            >
+                              <XMarkIcon className="h-3.5 w-3.5" />
+                            </button>
+                          </span>
                         ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Job Type *</label>
-                      <select {...register('type', { required: true })} className="input">
-                        {JOB_TYPES.map((t) => (
-                          <option key={t.value} value={t.value}>{t.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end">
-                    <button type="button" onClick={() => setActiveSection('details')} className="btn-primary">
-                      Next: Details
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Details */}
-              {activeSection === 'details' && (
-                <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
-                  <h2 className="font-semibold text-gray-900">Location & Compensation</h2>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">City *</label>
-                      <select {...register('city', { required: 'City is required' })} className="input">
-                        <option value="">Select city</option>
-                        {GUJARAT_CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                      </select>
-                      {errors.city && <p className="text-xs text-red-500 mt-1">{errors.city.message}</p>}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Pincode</label>
-                      <input {...register('pincode')} className="input" placeholder="380001" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Office Address</label>
-                    <input {...register('address')} className="input" placeholder="Full office address" />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Min Salary (monthly)</label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">₹</span>
-                        <input type="number" {...register('salaryMin')} className="input pl-7" placeholder="10000" min="0" />
                       </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Max Salary (monthly)</label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">₹</span>
-                        <input type="number" {...register('salaryMax')} className="input pl-7" placeholder="30000" min="0" />
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={skillInput}
+                          onChange={(e) => setSkillInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              if (skillInput.trim()) {
+                                setSkills([...skills, skillInput.trim()]);
+                                setSkillInput("");
+                              }
+                            }
+                          }}
+                          placeholder="Add skill (press Enter)"
+                          className={inputClass(false) + " flex-1"}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (skillInput.trim()) {
+                              setSkills([...skills, skillInput.trim()]);
+                              setSkillInput("");
+                            }
+                          }}
+                          className="bg-canvas text-ink border border-hairline-strong rounded-lg px-5 text-sm font-bold hover:border-ink transition-colors"
+                        >
+                          Add
+                        </button>
                       </div>
-                    </div>
-                  </div>
+                    </Field>
 
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" {...register('salaryNegotiable')} className="rounded text-primary-600" />
-                    <span className="text-sm text-gray-700">Salary is negotiable</span>
-                  </label>
+                    {/* Requirements */}
+                    <Field label="Requirements">
+                      {requirements.map((req, idx) => (
+                        <div key={idx} className="flex gap-2 mb-2">
+                          <input
+                            value={req}
+                            onChange={(e) =>
+                              setRequirements(requirements.map((r, i) => (i === idx ? e.target.value : r)))
+                            }
+                            placeholder={`Requirement ${idx + 1}`}
+                            className={inputClass(false) + " flex-1"}
+                          />
+                          {requirements.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => setRequirements(requirements.filter((_, i) => i !== idx))}
+                              className="text-muted-soft hover:text-error px-2"
+                            >
+                              <XMarkIcon className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setRequirements([...requirements, ""])}
+                        className="text-sm font-bold text-saffron hover:underline"
+                      >
+                        + Add requirement
+                      </button>
+                    </Field>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Experience Level *</label>
-                      <select {...register('experienceLevel')} className="input">
-                        {EXPERIENCE_LEVELS.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Qualification</label>
-                      <select {...register('qualification')} className="input">
-                        {QUALIFICATIONS.map((q) => <option key={q.value} value={q.value}>{q.label}</option>)}
-                      </select>
-                    </div>
-                  </div>
+                    <NavRow>
+                      <BackButton onClick={() => goNext("basic")} />
+                      <NextButton onClick={() => goNext("walkin")}>Continue</NextButton>
+                    </NavRow>
+                  </>
+                )}
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">No. of Openings</label>
-                      <input type="number" {...register('openings')} className="input" placeholder="1" min="1" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Application Deadline</label>
-                      <input type="date" {...register('deadline')} className="input" />
-                    </div>
-                  </div>
+                {activeSection === "walkin" && (
+                  <>
+                    <label
+                      className={`flex items-center gap-3 p-5 border-2 rounded-xl cursor-pointer transition-colors ${
+                        isWalkIn ? "border-saffron bg-saffron/5" : "border-hairline hover:border-hairline-strong"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isWalkIn}
+                        onChange={(e) => setIsWalkIn(e.target.checked)}
+                        className="w-5 h-5 rounded text-saffron focus:ring-saffron border-hairline-strong"
+                      />
+                      <div>
+                        <p className="font-bold tracking-tight text-ink text-sm">This is a walk-in interview</p>
+                        <p className="text-xs text-body">Candidates can walk in directly to your venue.</p>
+                      </div>
+                    </label>
 
-                  {/* Skills */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Required Skills</label>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {skills.map((s) => (
-                        <span key={s} className="bg-primary-50 text-primary-700 px-2.5 py-0.5 rounded-lg text-sm">
-                          {s}
-                          <button type="button" onClick={() => setSkills(skills.filter((sk) => sk !== s))} className="ml-1.5 text-primary-400 hover:text-red-500">×</button>
-                        </span>
+                    {isWalkIn && (
+                      <div className="space-y-5 bg-saffron/5 border border-saffron/20 rounded-xl p-5">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                          <Field label="Walk-in date">
+                            <input
+                              type="date"
+                              {...register("walkInDate")}
+                              min={new Date().toISOString().split("T")[0]}
+                              className={inputClass(false)}
+                            />
+                          </Field>
+                          <Field label="Contact person">
+                            <input
+                              {...register("walkInContact")}
+                              placeholder="HR Manager name"
+                              className={inputClass(false)}
+                            />
+                          </Field>
+                          <Field label="Start time">
+                            <input type="time" {...register("walkInStartTime")} className={inputClass(false)} />
+                          </Field>
+                          <Field label="End time">
+                            <input type="time" {...register("walkInEndTime")} className={inputClass(false)} />
+                          </Field>
+                        </div>
+                        <Field label="Venue address">
+                          <textarea
+                            {...register("walkInVenue")}
+                            rows={2}
+                            placeholder="Full venue address for candidates"
+                            className={inputClass(false) + " resize-none"}
+                          />
+                        </Field>
+                        <Field label="Contact phone">
+                          <input
+                            type="tel"
+                            {...register("walkInPhone")}
+                            placeholder="Contact number for candidates"
+                            className={inputClass(false)}
+                          />
+                        </Field>
+                      </div>
+                    )}
+
+                    <NavRow>
+                      <BackButton onClick={() => goNext("details")} />
+                      <NextButton onClick={() => goNext("extras")}>Continue</NextButton>
+                    </NavRow>
+                  </>
+                )}
+
+                {activeSection === "extras" && (
+                  <>
+                    <div className="space-y-3">
+                      {[
+                        {
+                          state: isGuaranteedHiring,
+                          setState: setIsGuaranteedHiring,
+                          label: "Guaranteed hiring",
+                          desc: "Commit to hiring a certain number of candidates",
+                        },
+                        {
+                          state: fastTrack,
+                          setState: setFastTrack,
+                          label: "Fast track hiring",
+                          desc: "Get hired within 48-72 hours",
+                        },
+                        {
+                          state: isFresherFriendly,
+                          setState: setIsFresherFriendly,
+                          label: "Fresher friendly",
+                          desc: "Open to candidates with 0 experience",
+                        },
+                      ].map(({ state, setState, label, desc }) => (
+                        <label
+                          key={label}
+                          className={`flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-colors ${
+                            state ? "border-saffron bg-saffron/5" : "border-hairline hover:border-hairline-strong"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={state}
+                            onChange={(e) => setState(e.target.checked)}
+                            className="w-5 h-5 rounded text-saffron focus:ring-saffron border-hairline-strong"
+                          />
+                          <div className="flex-1">
+                            <p className="font-bold tracking-tight text-ink text-sm">{label}</p>
+                            <p className="text-xs text-body">{desc}</p>
+                          </div>
+                          {state && <CheckCircleIcon className="h-5 w-5 text-saffron stroke-[1.5]" />}
+                        </label>
                       ))}
                     </div>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={skillInput}
-                        onChange={(e) => setSkillInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            if (skillInput.trim()) { setSkills([...skills, skillInput.trim()]); setSkillInput(''); }
-                          }
-                        }}
-                        placeholder="Add skill (press Enter)"
-                        className="input flex-1"
-                      />
-                      <button type="button" onClick={() => { if (skillInput.trim()) { setSkills([...skills, skillInput.trim()]); setSkillInput(''); } }} className="btn-secondary">Add</button>
-                    </div>
-                  </div>
 
-                  {/* Requirements */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Requirements</label>
-                    {requirements.map((req, idx) => (
-                      <div key={idx} className="flex gap-2 mb-2">
+                    {isGuaranteedHiring && (
+                      <Field label="Mandatory hire count">
                         <input
-                          value={req}
-                          onChange={(e) => updateRequirement(idx, e.target.value)}
-                          placeholder={`Requirement ${idx + 1}`}
-                          className="input flex-1"
+                          type="number"
+                          {...register("mandatoryHireCount")}
+                          min="1"
+                          placeholder="5"
+                          className={inputClass(false) + " w-32"}
                         />
-                        {requirements.length > 1 && (
-                          <button type="button" onClick={() => removeRequirement(idx)} className="text-red-400 hover:text-red-600 px-2">×</button>
+                      </Field>
+                    )}
+
+                    <Field label="Benefits / perks">
+                      {benefits.map((benefit, idx) => (
+                        <div key={idx} className="flex gap-2 mb-2">
+                          <input
+                            value={benefit}
+                            onChange={(e) =>
+                              setBenefits(benefits.map((b, i) => (i === idx ? e.target.value : b)))
+                            }
+                            placeholder="e.g. Health insurance, provident fund"
+                            className={inputClass(false) + " flex-1"}
+                          />
+                          {benefits.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => setBenefits(benefits.filter((_, i) => i !== idx))}
+                              className="text-muted-soft hover:text-error px-2"
+                            >
+                              <XMarkIcon className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setBenefits([...benefits, ""])}
+                        className="text-sm font-bold text-saffron hover:underline"
+                      >
+                        + Add benefit
+                      </button>
+                    </Field>
+
+                    <NavRow>
+                      <BackButton onClick={() => goNext("walkin")} />
+                      <button
+                        type="submit"
+                        disabled={createJobMutation.isPending}
+                        className="bg-saffron text-on-primary uppercase font-bold tracking-[0.05em] text-sm px-8 h-12 inline-flex items-center gap-2 hover:bg-saffron-active active:scale-[0.98] transition-all duration-150 disabled:opacity-60"
+                      >
+                        {createJobMutation.isPending ? (
+                          <>
+                            <LoadingSpinner size="sm" className="border-on-primary" />
+                            Posting
+                          </>
+                        ) : (
+                          <>
+                            <PaperAirplaneIcon className="h-4 w-4" />
+                            Post job
+                          </>
                         )}
-                      </div>
-                    ))}
-                    <button type="button" onClick={addRequirement} className="text-sm text-primary-600 font-medium">+ Add Requirement</button>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <button type="button" onClick={() => setActiveSection('basic')} className="btn-secondary">Back</button>
-                    <button type="button" onClick={() => setActiveSection('walkin')} className="btn-primary">Next: Walk-in</button>
-                  </div>
-                </div>
-              )}
-
-              {/* Walk-in */}
-              {activeSection === 'walkin' && (
-                <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
-                  <h2 className="font-semibold text-gray-900">Walk-in Interview Details</h2>
-
-                  <label className="flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-colors hover:border-orange-300 hover:bg-orange-50">
-                    <input
-                      type="checkbox"
-                      checked={isWalkIn}
-                      onChange={(e) => setIsWalkIn(e.target.checked)}
-                      className="w-5 h-5 rounded text-orange-500 focus:ring-orange-400"
-                    />
-                    <div>
-                      <p className="font-semibold text-gray-900">This is a Walk-in Interview</p>
-                      <p className="text-sm text-gray-500">Candidates can walk in directly to your venue</p>
-                    </div>
-                  </label>
-
-                  {isWalkIn && (
-                    <div className="space-y-4 bg-orange-50 border border-orange-200 rounded-xl p-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Walk-in Date</label>
-                          <input type="date" {...register('walkInDate')} className="input" min={new Date().toISOString().split('T')[0]} />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-                          <input type="time" {...register('walkInStartTime')} className="input" />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
-                          <input type="time" {...register('walkInEndTime')} className="input" />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
-                          <input {...register('walkInContact')} className="input" placeholder="HR Manager name" />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Venue Address</label>
-                        <textarea {...register('walkInVenue')} rows={2} className="input resize-none" placeholder="Full venue address for candidates to visit" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Contact Phone</label>
-                        <input type="tel" {...register('walkInPhone')} className="input" placeholder="Contact number for candidates" />
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex justify-between">
-                    <button type="button" onClick={() => setActiveSection('details')} className="btn-secondary">Back</button>
-                    <button type="button" onClick={() => setActiveSection('extras')} className="btn-primary">Next: Extras</button>
-                  </div>
-                </div>
-              )}
-
-              {/* Extras */}
-              {activeSection === 'extras' && (
-                <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
-                  <h2 className="font-semibold text-gray-900">Job Features & Benefits</h2>
-
-                  <div className="space-y-3">
-                    {[
-                      { key: 'isGuaranteedHiring', state: isGuaranteedHiring, setState: setIsGuaranteedHiring, label: '✅ Guaranteed Hiring', desc: 'Commit to hiring a certain number of candidates' },
-                      { key: 'fastTrack', state: fastTrack, setState: setFastTrack, label: '⚡ Fast Track Hiring', desc: 'Get hired within 48-72 hours' },
-                      { key: 'isFresherFriendly', state: isFresherFriendly, setState: setIsFresherFriendly, label: '🌱 Fresher Friendly', desc: 'Open to candidates with 0 experience' },
-                    ].map(({ key, state, setState, label, desc }) => (
-                      <label key={key} className={`flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-colors ${state ? 'border-primary-300 bg-primary-50' : 'border-gray-200 hover:border-gray-300'}`}>
-                        <input
-                          type="checkbox"
-                          checked={state}
-                          onChange={(e) => setState(e.target.checked)}
-                          className="w-5 h-5 rounded text-primary-600"
-                        />
-                        <div>
-                          <p className="font-semibold text-gray-900 text-sm">{label}</p>
-                          <p className="text-xs text-gray-500">{desc}</p>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-
-                  {isGuaranteedHiring && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Mandatory Hire Count</label>
-                      <input type="number" {...register('mandatoryHireCount')} className="input w-32" placeholder="5" min="1" />
-                    </div>
-                  )}
-
-                  {/* Benefits */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Benefits / Perks</label>
-                    {benefits.map((benefit, idx) => (
-                      <div key={idx} className="flex gap-2 mb-2">
-                        <input
-                          value={benefit}
-                          onChange={(e) => updateBenefit(idx, e.target.value)}
-                          placeholder={`e.g. Health Insurance, Provident Fund`}
-                          className="input flex-1"
-                        />
-                        {benefits.length > 1 && (
-                          <button type="button" onClick={() => removeBenefit(idx)} className="text-red-400 hover:text-red-600 px-2">×</button>
-                        )}
-                      </div>
-                    ))}
-                    <button type="button" onClick={addBenefit} className="text-sm text-primary-600 font-medium">+ Add Benefit</button>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <button type="button" onClick={() => setActiveSection('walkin')} className="btn-secondary">Back</button>
-                    <button
-                      type="submit"
-                      disabled={createJobMutation.isPending}
-                      className="btn-primary px-8 flex items-center gap-2"
-                    >
-                      {createJobMutation.isPending ? (
-                        <><LoadingSpinner size="sm" className="border-white" /> Posting...</>
-                      ) : (
-                        '🚀 Post Job'
-                      )}
-                    </button>
-                  </div>
-                </div>
-              )}
+                      </button>
+                    </NavRow>
+                  </>
+                )}
+              </div>
             </form>
           </div>
         </main>
       </div>
     </div>
   );
-};
+}
 
-export default PostJobPage;
+function Field({ label, error, required, children }) {
+  return (
+    <div>
+      <label className="block text-[13px] font-bold tracking-[0.15em] uppercase text-ink mb-2">
+        {label}
+        {required && <span className="text-saffron ml-1">*</span>}
+      </label>
+      {children}
+      {error && <p className="mt-1.5 text-xs text-error">{error}</p>}
+    </div>
+  );
+}
+
+function NavRow({ children }) {
+  return <div className="flex justify-between items-center pt-3 border-t border-hairline">{children}</div>;
+}
+
+function NextButton({ onClick, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="bg-saffron text-on-primary uppercase font-bold tracking-[0.05em] text-sm px-6 h-10 inline-flex items-center gap-2 hover:bg-saffron-active active:scale-[0.98] transition-all duration-150"
+    >
+      {children}
+      <ArrowRightIcon className="h-4 w-4" />
+    </button>
+  );
+}
+
+function BackButton({ onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="bg-canvas text-ink border border-hairline-strong rounded-full px-5 h-10 inline-flex items-center gap-2 text-sm font-bold hover:border-ink transition-colors"
+    >
+      <ArrowLeftIcon className="h-4 w-4" />
+      Back
+    </button>
+  );
+}
+
+function SalaryInput({ register, placeholder }) {
+  return (
+    <div className="relative">
+      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-soft text-sm">₹</span>
+      <input
+        type="number"
+        {...register}
+        placeholder={placeholder}
+        min="0"
+        className={inputClass(false) + " pl-7"}
+      />
+    </div>
+  );
+}
+
+function inputClass(hasError) {
+  return `w-full px-3.5 py-2.5 border rounded-lg text-sm bg-canvas focus:outline-none focus:ring-1 transition-all ${
+    hasError
+      ? "border-error focus:ring-error/30"
+      : "border-hairline focus:border-saffron focus:ring-saffron/30"
+  }`;
+}

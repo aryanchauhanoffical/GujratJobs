@@ -1,32 +1,23 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+/**
+ * ManageUsersPage — DESIGN.md "Disciplined warmth"
+ */
+
+import React, { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   MagnifyingGlassIcon,
-  FunnelIcon,
-  UserCircleIcon,
-  CheckBadgeIcon,
-  NoSymbolIcon,
   MapPinIcon,
-  CalendarIcon,
-  ChartBarIcon,
-  UsersIcon,
-  BuildingOfficeIcon,
-  ClipboardDocumentListIcon,
-} from '@heroicons/react/24/outline';
-import Navbar from '../../components/layout/Navbar';
-import Sidebar from '../../components/layout/Sidebar';
-import LoadingSpinner from '../../components/layout/LoadingSpinner';
-import toast from 'react-hot-toast';
-import axiosInstance from '../../api/axios';
-import { format } from 'date-fns';
-import { Link } from 'react-router-dom';
+  CheckBadgeIcon,
+} from "@heroicons/react/24/outline";
+import { format } from "date-fns";
+import toast from "react-hot-toast";
 
-const ADMIN_SIDEBAR_LINKS = [
-  { label: 'Dashboard', href: '/admin/dashboard', icon: ChartBarIcon },
-  { label: 'Manage Users', href: '/admin/users', icon: UsersIcon },
-  { label: 'Manage Recruiters', href: '/admin/recruiters', icon: BuildingOfficeIcon },
-  { label: 'Scraped Jobs', href: '/admin/scraped-jobs', icon: ClipboardDocumentListIcon },
-];
+import Navbar from "../../components/layout/Navbar";
+import Sidebar from "../../components/layout/Sidebar";
+import LoadingSpinner from "../../components/layout/LoadingSpinner";
+import { Badge } from "@/components/ui/badge";
+import axiosInstance from "../../api/axios";
+import { GUJARAT_CITIES } from "../../utils/constants";
 
 const fetchUsers = async (filters) => {
   const params = new URLSearchParams(filters).toString();
@@ -35,15 +26,16 @@ const fetchUsers = async (filters) => {
 };
 
 export default function ManageUsersPage() {
-  const queryClient = useQueryClient();
-  const [search, setSearch] = useState('');
-  const [filterCity, setFilterCity] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
+  const qc = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [filterCity, setFilterCity] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
   const [page, setPage] = useState(1);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['adminUsers', { search, filterCity, filterStatus, page }],
-    queryFn: () => fetchUsers({ search, city: filterCity, status: filterStatus, page, limit: 20 }),
+    queryKey: ["adminUsers", { search, filterCity, filterStatus, page }],
+    queryFn: () =>
+      fetchUsers({ search, city: filterCity, status: filterStatus, page, limit: 20 }),
     retry: false,
   });
 
@@ -51,161 +43,180 @@ export default function ManageUsersPage() {
   const totalPages = data?.totalPages || 1;
 
   const toggleStatus = useMutation({
-    mutationFn: ({ userId, action }) => axiosInstance.patch(`/admin/users/${userId}/${action}`),
+    mutationFn: ({ userId, action }) =>
+      axiosInstance.patch(`/admin/users/${userId}/${action}`),
     onSuccess: () => {
-      queryClient.invalidateQueries(['adminUsers']);
-      toast.success('User status updated');
+      qc.invalidateQueries(["adminUsers"]);
+      toast.success("User status updated");
     },
-    onError: () => toast.error('Failed to update user'),
+    onError: () => toast.error("Failed to update user"),
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-canvas">
       <Navbar />
-      <div className="flex">
-        <Sidebar links={ADMIN_SIDEBAR_LINKS} />
-        <main className="flex-1 p-6 lg:p-8">
-          <div className="max-w-7xl mx-auto">
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900">Manage Job Seekers</h1>
-              <p className="text-gray-500 mt-1">View, verify, and manage all registered job seekers</p>
-            </div>
-
-            {/* Filters */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 flex flex-wrap gap-4">
-              <div className="flex-1 min-w-[200px] relative">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search by name or email..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                />
-              </div>
-              <select
-                value={filterCity}
-                onChange={(e) => setFilterCity(e.target.value)}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="">All Cities</option>
-                {['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Gandhinagar', 'Bhavnagar', 'Jamnagar', 'Anand', 'Navsari'].map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="">All Status</option>
-                <option value="active">Active</option>
-                <option value="suspended">Suspended</option>
-                <option value="unverified">Unverified</option>
-              </select>
-            </div>
-
-            {/* Users Table */}
-            {isLoading ? (
-              <div className="flex justify-center py-20"><LoadingSpinner /></div>
-            ) : (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-gray-50 border-b border-gray-100">
-                        <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">User</th>
-                        <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Location</th>
-                        <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Applications</th>
-                        <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                        <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Joined</th>
-                        <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {users.map((user) => (
-                        <tr key={user._id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="h-9 w-9 rounded-full bg-indigo-100 flex items-center justify-center">
-                                <span className="text-indigo-700 font-semibold text-sm">{user.name?.[0]}</span>
-                              </div>
-                              <div>
-                                <div className="font-medium text-gray-900 text-sm flex items-center gap-1">
-                                  {user.name}
-                                  {user.isVerified && <CheckBadgeIcon className="h-4 w-4 text-blue-500" />}
-                                </div>
-                                <div className="text-xs text-gray-500">{user.email}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-1 text-sm text-gray-600">
-                              <MapPinIcon className="h-3.5 w-3.5 text-gray-400" />
-                              {user.location?.city || 'N/A'}, {user.location?.state || 'Gujarat'}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-700 font-medium">{user.applicationsCount || 0}</td>
-                          <td className="px-6 py-4">
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-                              user.isActive
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-red-100 text-red-700'
-                            }`}>
-                              {user.isActive ? 'Active' : 'Suspended'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-500">
-                            {user.createdAt ? format(new Date(user.createdAt), 'MMM d, yyyy') : 'N/A'}
-                          </td>
-                          <td className="px-6 py-4">
-                            <button
-                              onClick={() => toggleStatus.mutate({
-                                userId: user._id,
-                                action: user.isActive ? 'suspend' : 'activate',
-                              })}
-                              className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
-                                user.isActive
-                                  ? 'bg-red-50 text-red-600 hover:bg-red-100'
-                                  : 'bg-green-50 text-green-600 hover:bg-green-100'
-                              }`}
-                            >
-                              {user.isActive ? 'Suspend' : 'Activate'}
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
-                    <p className="text-sm text-gray-500">Page {page} of {totalPages}</p>
-                    <div className="flex gap-2">
-                      <button
-                        disabled={page === 1}
-                        onClick={() => setPage(p => p - 1)}
-                        className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50"
-                      >
-                        Previous
-                      </button>
-                      <button
-                        disabled={page === totalPages}
-                        onClick={() => setPage(p => p + 1)}
-                        className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+      <div className="flex flex-1">
+        <Sidebar />
+        <main className="flex-1 p-6 lg:p-10 bg-canvas-warm">
+          <div className="text-[13px] font-bold tracking-[0.15em] uppercase text-saffron mb-3">
+            Users
           </div>
+          <h1 className="text-3xl lg:text-4xl font-bold tracking-tighter text-ink leading-tight mb-8">
+            Manage job seekers.
+          </h1>
+
+          {/* Filters */}
+          <div className="bg-canvas border border-hairline rounded-xl p-5 mb-6 flex flex-wrap gap-3">
+            <div className="flex-1 min-w-[260px] relative">
+              <MagnifyingGlassIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-soft pointer-events-none" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by name or email..."
+                className="w-full pl-10 pr-3 py-2.5 border border-hairline rounded-lg text-sm bg-canvas focus:outline-none focus:border-saffron focus:ring-1 focus:ring-saffron/30 transition-all"
+              />
+            </div>
+            <select
+              value={filterCity}
+              onChange={(e) => setFilterCity(e.target.value)}
+              className="px-3 py-2.5 border border-hairline rounded-lg text-sm bg-canvas focus:outline-none focus:border-saffron transition-all"
+            >
+              <option value="">All cities</option>
+              {GUJARAT_CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="px-3 py-2.5 border border-hairline rounded-lg text-sm bg-canvas focus:outline-none focus:border-saffron transition-all"
+            >
+              <option value="">All status</option>
+              <option value="active">Active</option>
+              <option value="suspended">Suspended</option>
+              <option value="unverified">Unverified</option>
+            </select>
+          </div>
+
+          {isLoading ? (
+            <div className="flex justify-center py-20">
+              <LoadingSpinner size="lg" />
+            </div>
+          ) : (
+            <div className="bg-canvas border border-hairline rounded-xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-canvas-warm border-b border-hairline">
+                      <Th>User</Th>
+                      <Th>Location</Th>
+                      <Th>Applications</Th>
+                      <Th>Status</Th>
+                      <Th>Joined</Th>
+                      <Th>Actions</Th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-hairline">
+                    {users.map((user) => (
+                      <tr key={user._id} className="hover:bg-canvas-warm transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-full bg-saffron text-on-primary flex items-center justify-center font-bold text-sm shrink-0">
+                              {user.name?.[0]?.toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-bold tracking-tight text-ink text-sm flex items-center gap-1.5 truncate">
+                                {user.name}
+                                {user.isVerified && (
+                                  <CheckBadgeIcon className="h-4 w-4 text-success shrink-0" />
+                                )}
+                              </div>
+                              <div className="text-xs text-body truncate">{user.email}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-1.5 text-sm text-body">
+                            <MapPinIcon className="h-3.5 w-3.5 text-muted-soft" />
+                            {user.location?.city || "—"}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm font-bold tracking-tight text-ink tabular-nums">
+                          {user.applicationsCount || 0}
+                        </td>
+                        <td className="px-6 py-4">
+                          <Badge
+                            className={`uppercase tracking-[0.1em] text-[10px] font-bold rounded-full ${
+                              user.isActive
+                                ? "bg-success/10 text-success border-success/20"
+                                : "bg-error/10 text-error border-error/20"
+                            }`}
+                          >
+                            {user.isActive ? "Active" : "Suspended"}
+                          </Badge>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-muted-text">
+                          {user.createdAt
+                            ? format(new Date(user.createdAt), "MMM d, yyyy")
+                            : "—"}
+                        </td>
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() =>
+                              toggleStatus.mutate({
+                                userId: user._id,
+                                action: user.isActive ? "suspend" : "activate",
+                              })
+                            }
+                            className={`text-xs font-bold uppercase tracking-wider px-3 h-8 rounded-full border transition-colors ${
+                              user.isActive
+                                ? "bg-canvas text-error border-error/20 hover:bg-error/5"
+                                : "bg-canvas text-success border-success/20 hover:bg-success/5"
+                            }`}
+                          >
+                            {user.isActive ? "Suspend" : "Activate"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {totalPages > 1 && (
+                <div className="px-6 py-4 border-t border-hairline flex items-center justify-between">
+                  <p className="text-sm text-body tabular-nums">
+                    Page <span className="font-bold text-ink">{page}</span> of {totalPages}
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      disabled={page === 1}
+                      onClick={() => setPage((p) => p - 1)}
+                      className="bg-canvas text-ink border border-hairline-strong rounded-full px-4 h-9 text-xs font-bold uppercase tracking-wider hover:border-ink transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      disabled={page === totalPages}
+                      onClick={() => setPage((p) => p + 1)}
+                      className="bg-canvas text-ink border border-hairline-strong rounded-full px-4 h-9 text-xs font-bold uppercase tracking-wider hover:border-ink transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </main>
       </div>
     </div>
+  );
+}
+
+function Th({ children }) {
+  return (
+    <th className="text-left px-6 py-3 text-[10px] font-bold tracking-[0.15em] uppercase text-muted-text">
+      {children}
+    </th>
   );
 }

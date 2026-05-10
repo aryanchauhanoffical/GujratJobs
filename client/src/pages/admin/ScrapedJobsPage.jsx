@@ -1,3 +1,7 @@
+/**
+ * ScrapedJobsPage — DESIGN.md "Disciplined warmth"
+ */
+
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -8,43 +12,37 @@ import {
   MapPinIcon,
   BuildingOfficeIcon,
   CurrencyRupeeIcon,
-  LinkIcon,
-  ChartBarIcon,
-  UsersIcon,
+  ArrowTopRightOnSquareIcon,
   ClipboardDocumentListIcon,
   TagIcon,
 } from "@heroicons/react/24/outline";
+import { formatDistanceToNow } from "date-fns";
+import toast from "react-hot-toast";
+
 import Navbar from "../../components/layout/Navbar";
 import Sidebar from "../../components/layout/Sidebar";
 import LoadingSpinner from "../../components/layout/LoadingSpinner";
-import toast from "react-hot-toast";
+import StatsCard from "../../components/dashboard/StatsCard";
+import { Badge } from "@/components/ui/badge";
 import axiosInstance from "../../api/axios";
-import { formatDistanceToNow } from "date-fns";
 
-const ADMIN_SIDEBAR_LINKS = [
-  { label: "Dashboard", href: "/admin/dashboard", icon: ChartBarIcon },
-  { label: "Manage Users", href: "/admin/users", icon: UsersIcon },
-  {
-    label: "Manage Recruiters",
-    href: "/admin/recruiters",
-    icon: BuildingOfficeIcon,
-  },
-  {
-    label: "Scraped Jobs",
-    href: "/admin/scraped-jobs",
-    icon: ClipboardDocumentListIcon,
-  },
-];
+const SOURCE_BADGE = {
+  linkedin: "bg-saffron/10 text-saffron border-saffron/20",
+  indeed: "bg-saffron/10 text-saffron border-saffron/20",
+  naukri: "bg-marigold/10 text-marigold border-marigold/30",
+  manual: "bg-success/10 text-success border-success/20",
+};
 
-const SOURCE_COLORS = {
-  linkedin: "bg-blue-100 text-blue-700",
-  indeed: "bg-purple-100 text-purple-700",
-  naukri: "bg-orange-100 text-orange-700",
-  manual: "bg-green-100 text-green-700",
+const STATUS_BADGE = {
+  active: "bg-success/10 text-success border-success/20",
+  pending_approval: "bg-marigold/10 text-marigold border-marigold/30",
+  pending: "bg-marigold/10 text-marigold border-marigold/30",
+  flagged: "bg-error/10 text-error border-error/20",
+  closed: "bg-canvas-warm text-muted-text border-hairline",
 };
 
 export default function ScrapedJobsPage() {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterSource, setFilterSource] = useState("all");
   const [search, setSearch] = useState("");
@@ -76,11 +74,10 @@ export default function ScrapedJobsPage() {
   });
 
   const approveMutation = useMutation({
-    mutationFn: (jobId) =>
-      axiosInstance.put(`/admin/scraped-jobs/${jobId}/approve`),
+    mutationFn: (jobId) => axiosInstance.put(`/admin/scraped-jobs/${jobId}/approve`),
     onSuccess: () => {
-      queryClient.invalidateQueries(["scrapedJobs"]);
-      toast.success("Job approved and published!");
+      qc.invalidateQueries(["scrapedJobs"]);
+      toast.success("Job approved and published");
     },
     onError: () => toast.error("Failed to approve job"),
   });
@@ -88,19 +85,16 @@ export default function ScrapedJobsPage() {
   const approveAllMutation = useMutation({
     mutationFn: () => axiosInstance.put(`/admin/scraped-jobs/approve-all`),
     onSuccess: (res) => {
-      queryClient.invalidateQueries(["scrapedJobs"]);
-      toast.success(
-        `Successfully approved ${res.data?.count || "all pending"} jobs!`,
-      );
+      qc.invalidateQueries(["scrapedJobs"]);
+      toast.success(`Approved ${res.data?.count || "all pending"} jobs`);
     },
     onError: () => toast.error("Failed to approve jobs"),
   });
 
   const rejectMutation = useMutation({
-    mutationFn: (jobId) =>
-      axiosInstance.delete(`/admin/scraped-jobs/${jobId}/reject`),
+    mutationFn: (jobId) => axiosInstance.delete(`/admin/scraped-jobs/${jobId}/reject`),
     onSuccess: () => {
-      queryClient.invalidateQueries(["scrapedJobs"]);
+      qc.invalidateQueries(["scrapedJobs"]);
       toast.success("Job removed");
     },
     onError: () => toast.error("Failed to remove job"),
@@ -110,269 +104,222 @@ export default function ScrapedJobsPage() {
     setIsScraping(true);
     try {
       await axiosInstance.post("/scraping/trigger");
-      toast.success("Scraping started! New jobs will appear shortly.");
+      toast.success("Scraping started — new jobs will appear shortly");
       setTimeout(() => {
-        queryClient.invalidateQueries(["scrapedJobs"]);
+        qc.invalidateQueries(["scrapedJobs"]);
         setIsScraping(false);
       }, 3000);
     } catch (error) {
-      if (error.response && error.response.status === 409) {
-        toast.error("Scraping is already running. Please wait.");
+      if (error.response?.status === 409) {
+        toast.error("Scraping is already running");
       } else {
-        toast.error("Failed to trigger scraping. Check Apify API key.");
+        toast.error("Failed to trigger scraping");
       }
       setIsScraping(false);
     }
   };
 
-  const pendingCount = jobs.filter((j) => j.status === "pending").length;
+  const pendingCount = jobs.filter((j) => j.status === "pending" || j.status === "pending_approval").length;
   const flaggedCount = jobs.filter((j) => j.status === "flagged").length;
+  const approvedCount = jobs.filter((j) => j.status === "active").length;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-canvas">
       <Navbar />
-      <div className="flex">
-        <Sidebar links={ADMIN_SIDEBAR_LINKS} />
-        <main className="flex-1 p-6 lg:p-8">
-          <div className="max-w-7xl mx-auto">
-            {/* Header */}
-            <div className="mb-6 flex items-start justify-between flex-wrap gap-4">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  Scraped Jobs
-                </h1>
-                <p className="text-gray-500 mt-1">
-                  Review jobs scraped from LinkedIn, Indeed, and Naukri
-                </p>
+      <div className="flex flex-1">
+        <Sidebar />
+        <main className="flex-1 p-6 lg:p-10 bg-canvas-warm">
+          <div className="flex items-end justify-between mb-8 flex-wrap gap-3">
+            <div>
+              <div className="text-[13px] font-bold tracking-[0.15em] uppercase text-saffron mb-3">
+                Scraped jobs
               </div>
-              <div className="flex items-center gap-3">
-                {pendingCount > 0 && (
-                  <button
-                    onClick={() => approveAllMutation.mutate()}
-                    disabled={approveAllMutation.isPending}
-                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-colors disabled:opacity-50"
-                  >
-                    <CheckCircleIcon className="h-4 w-4" />
-                    {approveAllMutation.isPending
-                      ? "Approving..."
-                      : `Approve All Pending (${pendingCount})`}
-                  </button>
-                )}
+              <h1 className="text-3xl lg:text-4xl font-bold tracking-tighter text-ink leading-tight">
+                Review aggregated jobs.
+              </h1>
+            </div>
+            <div className="flex items-center gap-2">
+              {pendingCount > 0 && (
                 <button
-                  onClick={triggerScraping}
-                  disabled={isScraping}
-                  className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-colors disabled:opacity-50"
+                  onClick={() => approveAllMutation.mutate()}
+                  disabled={approveAllMutation.isPending}
+                  className="bg-canvas text-success border border-success/30 rounded-full px-5 h-10 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider hover:bg-success/5 transition-colors disabled:opacity-60"
                 >
-                  <ArrowPathIcon
-                    className={`h-4 w-4 ${isScraping ? "animate-spin" : ""}`}
-                  />
-                  {isScraping ? "Scraping..." : "Trigger New Scrape"}
+                  <CheckCircleIcon className="h-3.5 w-3.5" />
+                  {approveAllMutation.isPending ? "Approving..." : `Approve all (${pendingCount})`}
                 </button>
-              </div>
+              )}
+              <button
+                onClick={triggerScraping}
+                disabled={isScraping}
+                className="bg-saffron text-on-primary uppercase font-bold tracking-[0.05em] text-xs px-5 h-10 inline-flex items-center gap-2 hover:bg-saffron-active transition-colors disabled:opacity-60"
+              >
+                <ArrowPathIcon className={`h-3.5 w-3.5 ${isScraping ? "animate-spin" : ""}`} />
+                {isScraping ? "Scraping" : "Run scraping"}
+              </button>
             </div>
+          </div>
 
-            {/* Stats summary */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-              {[
-                {
-                  label: "Total Scraped",
-                  value: jobs.length,
-                  color: "text-gray-900",
-                },
-                {
-                  label: "Pending Review",
-                  value: pendingCount,
-                  color: "text-orange-600",
-                },
-                {
-                  label: "Approved",
-                  value: jobs.filter((j) => j.status === "active").length,
-                  color: "text-green-600",
-                },
-                {
-                  label: "Flagged",
-                  value: flaggedCount,
-                  color: "text-red-600",
-                },
-              ].map((s) => (
+          {/* Stats */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+            <StatsCard title="Total scraped" value={jobs.length} icon={ClipboardDocumentListIcon} />
+            <StatsCard title="Pending review" value={pendingCount} icon={MagnifyingGlassIcon} accent={pendingCount > 0} />
+            <StatsCard title="Approved" value={approvedCount} icon={CheckCircleIcon} />
+            <StatsCard title="Flagged" value={flaggedCount} icon={XCircleIcon} accent={flaggedCount > 0} />
+          </div>
+
+          {/* Filters */}
+          <div className="bg-canvas border border-hairline rounded-xl p-5 mb-6 flex flex-wrap gap-3">
+            <div className="flex-1 min-w-[260px] relative">
+              <MagnifyingGlassIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-soft pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search jobs..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-3 py-2.5 border border-hairline rounded-lg text-sm bg-canvas focus:outline-none focus:border-saffron focus:ring-1 focus:ring-saffron/30 transition-all"
+              />
+            </div>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="px-3 py-2.5 border border-hairline rounded-lg text-sm bg-canvas focus:outline-none focus:border-saffron transition-all"
+            >
+              <option value="all">All status</option>
+              <option value="pending">Pending</option>
+              <option value="active">Approved</option>
+              <option value="flagged">Flagged</option>
+            </select>
+            <select
+              value={filterSource}
+              onChange={(e) => setFilterSource(e.target.value)}
+              className="px-3 py-2.5 border border-hairline rounded-lg text-sm bg-canvas focus:outline-none focus:border-saffron transition-all"
+            >
+              <option value="all">All sources</option>
+              <option value="linkedin">LinkedIn</option>
+              <option value="indeed">Indeed</option>
+              <option value="naukri">Naukri</option>
+              <option value="manual">Manual</option>
+            </select>
+          </div>
+
+          {isLoading ? (
+            <div className="flex justify-center py-20">
+              <LoadingSpinner size="lg" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredJobs.map((job) => (
                 <div
-                  key={s.label}
-                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center"
+                  key={job._id}
+                  className={`bg-canvas rounded-xl border p-6 transition-colors ${
+                    job.status === "flagged"
+                      ? "border-error/30"
+                      : job.status === "pending" || job.status === "pending_approval"
+                      ? "border-marigold/30"
+                      : "border-hairline"
+                  }`}
                 >
-                  <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
-                  <p className="text-xs text-gray-500 mt-1">{s.label}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Filters */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 flex flex-wrap gap-4">
-              <div className="flex-1 min-w-[200px] relative">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search jobs..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                />
-              </div>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-sm"
-              >
-                <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="active">Approved</option>
-                <option value="flagged">Flagged</option>
-              </select>
-              <select
-                value={filterSource}
-                onChange={(e) => setFilterSource(e.target.value)}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-sm"
-              >
-                <option value="all">All Sources</option>
-                <option value="linkedin">LinkedIn</option>
-                <option value="indeed">Indeed</option>
-                <option value="naukri">Naukri</option>
-              </select>
-            </div>
-
-            {isLoading ? (
-              <div className="flex justify-center py-20">
-                <LoadingSpinner />
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {filteredJobs.map((job) => (
-                  <div
-                    key={job._id}
-                    className={`bg-white rounded-xl shadow-sm border p-5 transition-all ${
-                      job.status === "flagged"
-                        ? "border-red-200"
-                        : job.status === "pending"
-                          ? "border-orange-200"
-                          : "border-gray-100"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-4 flex-wrap">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <h3 className="font-semibold text-gray-900">
-                            {job.title}
-                          </h3>
-                          {job.isWalkIn && (
-                            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                              Walk-in
-                            </span>
-                          )}
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
-                              SOURCE_COLORS[job.source] ||
-                              "bg-gray-100 text-gray-600"
-                            }`}
-                          >
-                            {job.source}
-                          </span>
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
-                              job.status === "active"
-                                ? "bg-green-100 text-green-700"
-                                : job.status === "flagged"
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-orange-100 text-orange-700"
-                            }`}
-                          >
-                            {job.status === "active" ? "approved" : job.status}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-4 text-sm text-gray-500 flex-wrap">
-                          <span className="flex items-center gap-1">
-                            <BuildingOfficeIcon className="h-3.5 w-3.5" />
-                            {job.company}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <MapPinIcon className="h-3.5 w-3.5" />
-                            {job.location?.city}, Gujarat
-                          </span>
-                          {job.salary?.min && (
-                            <span className="flex items-center gap-1">
-                              <CurrencyRupeeIcon className="h-3.5 w-3.5" />₹
-                              {job.salary.min.toLocaleString()} – ₹
-                              {job.salary.max.toLocaleString()}
-                            </span>
-                          )}
-                          <span className="text-xs">
-                            {formatDistanceToNow(new Date(job.createdAt), {
-                              addSuffix: true,
-                            })}
-                          </span>
-                        </div>
-
-                        {job.tags?.length > 0 && (
-                          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                            <TagIcon className="h-3.5 w-3.5 text-gray-400" />
-                            {job.tags.map((tag) => (
-                              <span
-                                key={tag}
-                                className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
+                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-2">
+                        <h3 className="font-bold tracking-tight text-ink">{job.title}</h3>
+                        {job.isWalkIn && (
+                          <Badge className="bg-saffron/10 text-saffron border-saffron/20 rounded-full text-[10px] uppercase font-bold tracking-wider">
+                            Walk-in
+                          </Badge>
                         )}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {job.sourceUrl && (
-                          <a
-                            href={job.sourceUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                            title="View source"
-                          >
-                            <LinkIcon className="h-4 w-4" />
-                          </a>
-                        )}
-                        {job.status !== "active" && (
-                          <button
-                            onClick={() => approveMutation.mutate(job._id)}
-                            disabled={approveMutation.isPending}
-                            className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-                          >
-                            <CheckCircleIcon className="h-4 w-4" />
-                            Approve
-                          </button>
-                        )}
-                        <button
-                          onClick={() => rejectMutation.mutate(job._id)}
-                          disabled={rejectMutation.isPending}
-                          className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                        <Badge
+                          className={`${SOURCE_BADGE[job.source] || SOURCE_BADGE.manual} uppercase tracking-[0.1em] text-[10px] font-bold rounded-full`}
                         >
-                          <XCircleIcon className="h-4 w-4" />
-                          Remove
-                        </button>
+                          {job.source}
+                        </Badge>
+                        <Badge
+                          className={`${STATUS_BADGE[job.status] || STATUS_BADGE.pending} uppercase tracking-[0.1em] text-[10px] font-bold rounded-full`}
+                        >
+                          {job.status === "active" ? "approved" : job.status.replace("_", " ")}
+                        </Badge>
                       </div>
+
+                      <div className="flex items-center gap-4 text-sm text-body flex-wrap">
+                        <span className="inline-flex items-center gap-1.5">
+                          <BuildingOfficeIcon className="h-3.5 w-3.5 text-muted-soft" />
+                          {job.company}
+                        </span>
+                        <span className="inline-flex items-center gap-1.5">
+                          <MapPinIcon className="h-3.5 w-3.5 text-muted-soft" />
+                          {job.location?.city}, Gujarat
+                        </span>
+                        {job.salary?.min > 0 && (
+                          <span className="inline-flex items-center gap-1.5">
+                            <CurrencyRupeeIcon className="h-3.5 w-3.5 text-muted-soft" />
+                            {job.salary.min.toLocaleString()} – {job.salary.max?.toLocaleString()}
+                          </span>
+                        )}
+                        <span className="text-xs text-muted-text">
+                          {formatDistanceToNow(new Date(job.createdAt), { addSuffix: true })}
+                        </span>
+                      </div>
+
+                      {job.tags?.length > 0 && (
+                        <div className="flex items-center gap-1.5 mt-3 flex-wrap">
+                          <TagIcon className="h-3.5 w-3.5 text-muted-soft" />
+                          {job.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="bg-canvas-warm border border-hairline text-body px-2 py-0.5 rounded-md text-xs"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {job.sourceUrl && (
+                        <a
+                          href={job.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 text-muted-soft hover:text-saffron hover:bg-canvas-warm rounded-md transition-colors"
+                          title="View source"
+                        >
+                          <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+                        </a>
+                      )}
+                      {job.status !== "active" && (
+                        <button
+                          onClick={() => approveMutation.mutate(job._id)}
+                          disabled={approveMutation.isPending}
+                          className="bg-saffron text-on-primary uppercase font-bold tracking-[0.05em] text-xs px-4 h-9 inline-flex items-center gap-1.5 hover:bg-saffron-active transition-colors disabled:opacity-60"
+                        >
+                          <CheckCircleIcon className="h-3.5 w-3.5" />
+                          Approve
+                        </button>
+                      )}
+                      <button
+                        onClick={() => rejectMutation.mutate(job._id)}
+                        disabled={rejectMutation.isPending}
+                        className="bg-canvas text-error border border-error/20 rounded-full px-4 h-9 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider hover:bg-error/5 transition-colors disabled:opacity-60"
+                      >
+                        <XCircleIcon className="h-3.5 w-3.5" />
+                        Remove
+                      </button>
                     </div>
                   </div>
-                ))}
+                </div>
+              ))}
 
-                {filteredJobs.length === 0 && (
-                  <div className="text-center py-16 text-gray-500">
-                    <ClipboardDocumentListIcon className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-                    <p className="font-medium">No scraped jobs found</p>
-                    <p className="text-sm text-gray-400 mt-1">
-                      Try triggering a new scrape
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+              {filteredJobs.length === 0 && (
+                <div className="bg-canvas border border-hairline rounded-xl text-center py-20">
+                  <ClipboardDocumentListIcon className="h-12 w-12 mx-auto text-muted-soft stroke-[1.5] mb-4" />
+                  <p className="text-ink font-bold tracking-tight">No scraped jobs found</p>
+                  <p className="text-sm text-body mt-1">Try triggering a new scrape</p>
+                </div>
+              )}
+            </div>
+          )}
         </main>
       </div>
     </div>

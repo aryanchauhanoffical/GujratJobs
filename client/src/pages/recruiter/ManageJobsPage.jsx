@@ -1,70 +1,105 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import toast from 'react-hot-toast';
-import {
-  PlusCircleIcon, EyeIcon, PencilIcon, TrashIcon,
-  XMarkIcon, UserGroupIcon,
-} from '@heroicons/react/24/outline';
-import Navbar from '../../components/layout/Navbar';
-import Sidebar from '../../components/layout/Sidebar';
-import LoadingSpinner from '../../components/layout/LoadingSpinner';
-import { jobsAPI } from '../../api/jobs.api';
-import { formatSalary, timeAgo } from '../../utils/helpers';
+/**
+ * ManageJobsPage — DESIGN.md "Disciplined warmth"
+ */
 
-const STATUS_COLORS = {
-  active: 'bg-green-100 text-green-700',
-  closed: 'bg-gray-100 text-gray-600',
-  draft: 'bg-yellow-100 text-yellow-700',
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+import {
+  PlusCircleIcon,
+  EyeIcon,
+  TrashIcon,
+  XMarkIcon,
+  UserGroupIcon,
+  BriefcaseIcon,
+} from "@heroicons/react/24/outline";
+
+import Navbar from "../../components/layout/Navbar";
+import Sidebar from "../../components/layout/Sidebar";
+import LoadingSpinner from "../../components/layout/LoadingSpinner";
+import { Badge } from "@/components/ui/badge";
+import { jobsAPI } from "../../api/jobs.api";
+import { timeAgo } from "../../utils/helpers";
+
+const STATUS_BADGE = {
+  active: "bg-success/10 text-success border-success/20",
+  closed: "bg-canvas-warm text-muted-text border-hairline",
+  draft: "bg-marigold/10 text-marigold border-marigold/30",
 };
 
-const ManageJobsPage = () => {
-  const [statusFilter, setStatusFilter] = useState('all');
+export default function ManageJobsPage() {
+  const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
   const qc = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['myJobs', statusFilter, page],
-    queryFn: () => jobsAPI.getMyJobs({ status: statusFilter === 'all' ? undefined : statusFilter, page, limit: 10 }),
+    queryKey: ["myJobs", statusFilter, page],
+    queryFn: () =>
+      jobsAPI.getMyJobs({
+        status: statusFilter === "all" ? undefined : statusFilter,
+        page,
+        limit: 10,
+      }),
   });
 
   const deleteMutation = useMutation({
     mutationFn: jobsAPI.delete,
-    onSuccess: () => { toast.success('Job deleted'); qc.invalidateQueries(['myJobs']); },
-    onError: () => toast.error('Failed to delete job'),
+    onSuccess: () => {
+      toast.success("Job deleted");
+      qc.invalidateQueries(["myJobs"]);
+    },
+    onError: () => toast.error("Failed to delete job"),
   });
 
   const closeMutation = useMutation({
     mutationFn: jobsAPI.close,
-    onSuccess: () => { toast.success('Job closed'); qc.invalidateQueries(['myJobs']); },
-    onError: () => toast.error('Failed to close job'),
+    onSuccess: () => {
+      toast.success("Job closed");
+      qc.invalidateQueries(["myJobs"]);
+    },
+    onError: () => toast.error("Failed to close job"),
   });
 
   const jobs = data?.jobs || [];
   const pagination = data?.pagination;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-canvas">
       <Navbar />
       <div className="flex flex-1">
         <Sidebar />
-        <main className="flex-1 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">My Job Postings</h1>
-            <Link to="/recruiter/post-job" className="btn-primary flex items-center gap-2">
-              <PlusCircleIcon className="h-5 w-5" />
-              Post New Job
+        <main className="flex-1 p-6 lg:p-10 bg-canvas-warm">
+          <div className="flex items-end justify-between mb-8 flex-wrap gap-4">
+            <div>
+              <div className="text-[13px] font-bold tracking-[0.15em] uppercase text-saffron mb-3">
+                Job postings
+              </div>
+              <h1 className="text-3xl lg:text-4xl font-bold tracking-tighter text-ink leading-tight">
+                Manage your jobs.
+              </h1>
+            </div>
+            <Link
+              to="/recruiter/post-job"
+              className="bg-saffron text-on-primary uppercase font-bold tracking-[0.05em] text-sm px-6 h-12 inline-flex items-center gap-2 hover:bg-saffron-active transition-colors"
+            >
+              <PlusCircleIcon className="h-5 w-5 stroke-[1.5]" />
+              Post new job
             </Link>
           </div>
 
-          {/* Filter tabs */}
-          <div className="flex gap-2 mb-5">
-            {['all', 'active', 'closed', 'draft'].map((s) => (
+          <div className="flex gap-2 mb-6">
+            {["all", "active", "closed", "draft"].map((s) => (
               <button
                 key={s}
-                onClick={() => { setStatusFilter(s); setPage(1); }}
-                className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors ${
-                  statusFilter === s ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                onClick={() => {
+                  setStatusFilter(s);
+                  setPage(1);
+                }}
+                className={`px-4 h-9 rounded-full text-sm font-bold tracking-tight capitalize border transition-colors ${
+                  statusFilter === s
+                    ? "bg-ink text-on-dark border-ink"
+                    : "bg-canvas text-ink border-hairline hover:border-ink"
                 }`}
               >
                 {s}
@@ -73,80 +108,100 @@ const ManageJobsPage = () => {
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>
+            <div className="flex justify-center py-20">
+              <LoadingSpinner size="lg" />
+            </div>
           ) : jobs.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-200 p-16 text-center">
-              <BriefcaseIcon className="h-16 w-16 text-gray-200 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No jobs posted yet</h3>
-              <Link to="/recruiter/post-job" className="btn-primary mt-4 inline-block">Post Your First Job</Link>
+            <div className="bg-canvas border border-hairline rounded-xl p-16 text-center">
+              <BriefcaseIcon className="h-14 w-14 text-muted-soft stroke-[1.5] mx-auto mb-5" />
+              <h3 className="text-xl font-bold tracking-tight text-ink mb-2">
+                No jobs posted yet
+              </h3>
+              <Link
+                to="/recruiter/post-job"
+                className="mt-4 inline-flex items-center bg-saffron text-on-primary uppercase font-bold tracking-[0.05em] text-sm px-6 h-10 hover:bg-saffron-active transition-colors"
+              >
+                Post your first job
+              </Link>
             </div>
           ) : (
             <>
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="bg-canvas border border-hairline rounded-xl overflow-hidden">
                 <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className="bg-canvas-warm border-b border-hairline">
                     <tr>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Job</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Location</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Applicants</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Posted</th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                      <Th>Job</Th>
+                      <Th className="hidden md:table-cell">Location</Th>
+                      <Th>Applicants</Th>
+                      <Th>Status</Th>
+                      <Th>Posted</Th>
+                      <Th className="text-right">Actions</Th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-hairline">
                     {jobs.map((job) => (
-                      <tr key={job._id} className="hover:bg-gray-50 transition-colors">
+                      <tr key={job._id} className="hover:bg-canvas-warm transition-colors">
                         <td className="px-4 py-4">
-                          <p className="font-medium text-gray-900 text-sm">{job.title}</p>
-                          <p className="text-xs text-gray-500">{job.company}</p>
-                          <div className="flex gap-1 mt-1">
-                            {job.isWalkIn && <span className="badge-orange text-xs">Walk-in</span>}
-                            {job.isGuaranteedHiring && <span className="badge-green text-xs">Guaranteed</span>}
+                          <p className="font-bold tracking-tight text-ink text-sm">{job.title}</p>
+                          <p className="text-xs text-body">{job.company}</p>
+                          <div className="flex gap-1.5 mt-1.5">
+                            {job.isWalkIn && (
+                              <Badge className="bg-saffron/10 text-saffron border-saffron/20 rounded-full text-[10px] uppercase font-bold tracking-wider">
+                                Walk-in
+                              </Badge>
+                            )}
+                            {job.isGuaranteedHiring && (
+                              <Badge className="bg-success/10 text-success border-success/20 rounded-full text-[10px] uppercase font-bold tracking-wider">
+                                Guaranteed
+                              </Badge>
+                            )}
                           </div>
                         </td>
                         <td className="px-4 py-4 hidden md:table-cell">
-                          <p className="text-sm text-gray-600">{job.location?.city}</p>
+                          <p className="text-sm text-body">{job.location?.city}</p>
                         </td>
                         <td className="px-4 py-4">
                           <Link
                             to={`/recruiter/jobs/${job._id}/applicants`}
-                            className="flex items-center gap-1.5 text-primary-600 hover:text-primary-700 text-sm font-medium"
+                            className="text-saffron hover:underline text-sm font-bold inline-flex items-center gap-1.5"
                           >
                             <UserGroupIcon className="h-4 w-4" />
                             {job.applicantCount || 0}
                           </Link>
                         </td>
                         <td className="px-4 py-4">
-                          <span className={`badge capitalize ${STATUS_COLORS[job.status] || 'bg-gray-100 text-gray-600'}`}>
+                          <Badge
+                            className={`${STATUS_BADGE[job.status] || STATUS_BADGE.closed} uppercase tracking-[0.1em] text-[10px] font-bold rounded-full px-2.5`}
+                          >
                             {job.status}
-                          </span>
+                          </Badge>
                         </td>
-                        <td className="px-4 py-4 text-xs text-gray-500">{timeAgo(job.createdAt)}</td>
+                        <td className="px-4 py-4 text-xs text-muted-text">{timeAgo(job.createdAt)}</td>
                         <td className="px-4 py-4">
-                          <div className="flex items-center justify-end gap-2">
-                            <Link to={`/jobs/${job._id}`} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
+                          <div className="flex items-center justify-end gap-1">
+                            <IconButton to={`/jobs/${job._id}`} title="View">
                               <EyeIcon className="h-4 w-4" />
-                            </Link>
-                            {job.status === 'active' && (
-                              <button
+                            </IconButton>
+                            {job.status === "active" && (
+                              <IconButton
                                 onClick={() => closeMutation.mutate(job._id)}
-                                className="p-1.5 text-yellow-500 hover:text-yellow-600 rounded-lg hover:bg-yellow-50"
                                 title="Close job"
+                                tone="warning"
                               >
                                 <XMarkIcon className="h-4 w-4" />
-                              </button>
+                              </IconButton>
                             )}
-                            <button
+                            <IconButton
                               onClick={() => {
-                                if (confirm('Delete this job? This cannot be undone.')) {
+                                if (confirm("Delete this job? This cannot be undone.")) {
                                   deleteMutation.mutate(job._id);
                                 }
                               }}
-                              className="p-1.5 text-red-400 hover:text-red-600 rounded-lg hover:bg-red-50"
+                              title="Delete"
+                              tone="error"
                             >
                               <TrashIcon className="h-4 w-4" />
-                            </button>
+                            </IconButton>
                           </div>
                         </td>
                       </tr>
@@ -156,10 +211,24 @@ const ManageJobsPage = () => {
               </div>
 
               {pagination && pagination.pages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-6">
-                  <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="btn-secondary disabled:opacity-40">Previous</button>
-                  <span className="text-sm text-gray-600">Page {page} of {pagination.pages}</span>
-                  <button onClick={() => setPage((p) => Math.min(pagination.pages, p + 1))} disabled={page === pagination.pages} className="btn-secondary disabled:opacity-40">Next</button>
+                <div className="flex items-center justify-center gap-3 mt-8">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="bg-canvas text-ink border border-hairline-strong rounded-full px-5 h-10 inline-flex items-center text-sm font-bold hover:border-ink transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-sm text-body tabular-nums">
+                    Page <span className="font-bold text-ink">{page}</span> of {pagination.pages}
+                  </span>
+                  <button
+                    onClick={() => setPage((p) => Math.min(pagination.pages, p + 1))}
+                    disabled={page === pagination.pages}
+                    className="bg-canvas text-ink border border-hairline-strong rounded-full px-5 h-10 inline-flex items-center text-sm font-bold hover:border-ink transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
                 </div>
               )}
             </>
@@ -168,13 +237,33 @@ const ManageJobsPage = () => {
       </div>
     </div>
   );
-};
+}
 
-// Need BriefcaseIcon
-const BriefcaseIcon = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0" />
-  </svg>
-);
+function Th({ children, className = "" }) {
+  return (
+    <th
+      className={`text-left px-4 py-3 text-[10px] font-bold tracking-[0.15em] uppercase text-muted-text ${className}`}
+    >
+      {children}
+    </th>
+  );
+}
 
-export default ManageJobsPage;
+function IconButton({ children, to, onClick, title, tone = "default" }) {
+  const cls =
+    tone === "error"
+      ? "text-muted-soft hover:text-error hover:bg-error/10"
+      : tone === "warning"
+      ? "text-muted-soft hover:text-marigold hover:bg-marigold/10"
+      : "text-muted-soft hover:text-ink hover:bg-canvas-warm";
+  const inner = <span className={`p-1.5 rounded-md transition-colors ${cls}`}>{children}</span>;
+  return to ? (
+    <Link to={to} title={title}>
+      {inner}
+    </Link>
+  ) : (
+    <button onClick={onClick} title={title}>
+      {inner}
+    </button>
+  );
+}
